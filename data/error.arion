@@ -1,0 +1,11 @@
+program error;
+
+var
+  a, b: integer;
+
+begin
+  a := 203.;
+  b := @123;
+  writeln('hello);
+  (* ga lengkap
+end.

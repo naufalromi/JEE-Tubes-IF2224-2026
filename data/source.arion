@@ -1,0 +1,30 @@
+program test;
+
+const
+  PI := 3.14;
+  CH := 'A';
+  MSG := 'HELLO';
+
+var
+  x, y, i: integer;
+
+begin
+  x := 10;
+  y := x + 2 * 3;
+
+  if y >= 10 then
+    y := y - 1
+  else
+    y := y + 1;
+
+  { wow comment }
+  (* wow comment *)
+
+  for i := 1 to 3 do
+    y := y + i;
+
+  while y <> 0 do
+    y := y - 1;
+
+  writeln('Sixty SEVENNNN');
+end.
