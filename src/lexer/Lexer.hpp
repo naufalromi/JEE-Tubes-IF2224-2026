@@ -14,6 +14,9 @@ private:
     // Loopup table untuk memetekan string "var", "begin" ke Tokentype
     std::unordered_map<std::string, TokenType> keywordsMap;
 
+    // Menyimpan semua error
+    std::vector<Token> errorTokens;
+
     // Fungsi internal untuk mendaftarkan semua keyword ke dalam map saat inisialisasi
     void initKeywordsMap();
 
@@ -31,6 +34,9 @@ public:
     // Wrapper helper: Langsung mengubah seluruh source code menjadi daftar token
     // Berguna untuk meng-output hasil ke file output.txt
     std::vector<Token> tokenizeAll();
+
+    // buat post eof print errors
+    const std::vector<Token>& getErrorTokens() const;
     
     ~LexicalAnalyzer();
 };

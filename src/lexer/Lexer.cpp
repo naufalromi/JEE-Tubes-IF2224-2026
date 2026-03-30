@@ -61,7 +61,9 @@ Token LexicalAnalyzer::getNextToken()
     }
 
     char currentChar = state.peek();
-    Token token(TokenType::ERROR_TOKEN, "", 0, 0);
+
+    // why start as error token? well ig yeah
+    Token token(TokenType::ERROR_TOKEN, ErrorType::None, 0, 0);
 
     // Berada di state 0
     std::cout << "State 0 => ";
@@ -69,21 +71,22 @@ Token LexicalAnalyzer::getNextToken()
         token = SpecificScanners::scanAlpha(state, keywordsMap);
     }
     else if (std::isdigit(currentChar)) {
-        // token = SpecificScanners::scanNumeric(state);
+        token = SpecificScanners::scanNumeric(state);
     }
     else if (currentChar == '\'') {
-        // token = SpecificScanners::scanText(state);
+        token = SpecificScanners::scanText(state);
     }
     else {
         token = SpecificScanners::scanSymbol(state);
+
+        if (token.type == TokenType::COMMENT) {
+            return getNextToken();
+        }
+
         if (token.value.length() == 1) {
              std::cout << token.value << " => char => State 0 => Gotten: " 
                        << tokenTypeToString(token.type) << "(" << token.value << ")\n";
         }
-    }
-
-    if (token.type == TokenType::ERROR_TOKEN) {
-        throw LexicalError("Karakter illegal atau token tidak valid: '" + token.value + "'", token.line, token.column);
     }
 
     return token;
@@ -92,12 +95,13 @@ Token LexicalAnalyzer::getNextToken()
 // TODO : Implementasi Langsung mengubah seluruh source code menjadi daftar token
 std::vector<Token> LexicalAnalyzer::tokenizeAll()
 {
+    errorTokens.clear();
     std::vector<Token> tokens;
     Token currentToken = getNextToken();
 
     while (currentToken.type != TokenType::END_OF_FILE)
     {
-        tokens.push_back(currentToken);
+        currentToken.type == TokenType::ERROR_TOKEN ? errorTokens.push_back(currentToken) : tokens.push_back(currentToken);
         currentToken = getNextToken();
     }
 
@@ -105,4 +109,9 @@ std::vector<Token> LexicalAnalyzer::tokenizeAll()
     tokens.push_back(currentToken);
     
     return tokens;
+}
+
+const std::vector<Token>& LexicalAnalyzer::getErrorTokens() const
+{
+    return errorTokens;
 }

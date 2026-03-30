@@ -32,5 +32,15 @@ public:
     ~LexicalError();
 };
 
+// for easier error documentation
+enum class ErrorType {
+    None,
+    IllegalChar,
+    IncompleteReal,
+    UnterminatedString,
+    UnterminatedComment
+};
+
+std::string errorTypeToMessage(ErrorType type, const std::string &detail = "");
 
 // Continue for Class SyntaxError and SemanticError here inherit from CompilerError

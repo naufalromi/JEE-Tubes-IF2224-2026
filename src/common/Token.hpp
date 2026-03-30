@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include "Error.hpp"
 
 enum class TokenType {
     // ---------------------------------------------------------
@@ -67,9 +68,16 @@ struct Token {
     std::string value;
     int line;
     int column;
+    ErrorType errorType;
 
-    Token(TokenType t, std::string v, int l, int c) 
-        : type(t), value(v), line(l), column(c) {}
+    Token(TokenType t, std::string v, int l, int c)
+        : type(t), value(v), line(l), column(c), errorType(ErrorType::None) {}
+
+    // Specific token constructor for errors
+    Token(TokenType t, ErrorType e, int l, int c, std::string detail = "")
+        : type(t), value(detail), line(l), column(c), errorType(e) {}
+
+    
     
 };
 std::string tokenTypeToString(TokenType type);
