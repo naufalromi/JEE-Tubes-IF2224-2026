@@ -3,10 +3,11 @@
 #include "LexerState.hpp"
 #include <unordered_map>
 #include <string>
+#include <vector>
 
 namespace SpecificScanners{
     // Alphanumeric (Identifier, Keyword)
-    Token scanAlpha(LexerState& state, const std::unordered_map<std::string, TokenType>& keywordsMap);
+    Token scanAlpha(LexerState &state, const std::vector<std::string> &keywordsArray, const std::vector<TokenType> &tokenTypeArray);
     
     // Numeric (Int, Real)
     Token scanNumeric(LexerState& state);
