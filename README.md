@@ -86,8 +86,8 @@ This project is part of the IF2224 - Formal Language and Automata Theory course 
 1. Download and install MinGW-w64 from an official distributor  
 2. Ensure `gcc`, `g++`, and `make` (or `mingw32-make`) are added to your system PATH  
 3. Verify:
-   ```bash
-   gcc --version
+```bash
+   g++ --version
    make --version
 ````
 
@@ -96,15 +96,15 @@ This project is part of the IF2224 - Formal Language and Automata Theory course 
 1. Open your terminal
 2. Install build essentials:
 
-   ```bash
-   sudo apt update
-   sudo apt install build-essential
-   ```
+```bash
+sudo apt update
+sudo apt install build-essential
+```
 3. Verify:
 
-   ```bash
-   gcc --version && make --version
-   ```
+```bash
+g++ --version && make --version
+```
 
 ---
 
@@ -112,21 +112,21 @@ This project is part of the IF2224 - Formal Language and Automata Theory course 
 
 1. Clone the repository
 
-   ```bash
-   git clone https://github.com/naufalromi/JEE-Tubes-IF2224-2026.git
-   ```
+```bash
+git clone https://github.com/naufalromi/JEE-Tubes-IF2224-2026.git
+```
 
 2. Navigate to the source directory and compile
 
-   ```bash
-   cd src
-   make
-   ```
+```bash
+cd JEE-Tubes-IF2224-2026
+make all
+```
 
 3. Run the lexer program
 
-   ```bash
-   ./lexer <path_to_input_file.txt>
-   ```
+```bash
+make run
+```
 
 ```
