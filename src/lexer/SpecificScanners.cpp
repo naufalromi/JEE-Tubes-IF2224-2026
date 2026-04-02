@@ -165,20 +165,18 @@ namespace SpecificScanners
         if (state.peek() == '.')
         {
 
+            char dot = state.advance();
+            lexeme += dot;
+            std::cout << dot << " => State n2\n";
+
             // incomplete real 
-            if (!std::isdigit(static_cast<unsigned char>(state.peekNext())))
+            if (!std::isdigit(static_cast<unsigned char>(state.peek())))
             {
-                char dot = state.advance(); // consume '.'
-                lexeme += dot;
-                std::cout << dot << " => State nErr\n";
                 std::cout << "=> State Final State => Gotten: error(" << lexeme << ")\n";
                 return Token(TokenType::ERROR_TOKEN, ErrorType::IncompleteReal, startLine, startColumn, lexeme);
             }
 
             isReal = true;
-            char dot = state.advance();
-            lexeme += dot;
-            std::cout << dot << " => State n2\n";
 
             // read num again
             while (std::isdigit(static_cast<unsigned char>(state.peek())))
@@ -418,9 +416,14 @@ namespace SpecificScanners
             return Token(TokenType::GTR, ">", startLine, startColumn);
 
         case '=':
-            std::cout << "=> State s25 => Gotten: eql(=)\n";
-            return Token(TokenType::EQL, "=", startLine, startColumn);
-
+            if (state.peek() == '=') {
+                state.advance();
+                std::cout << "= => State s25\n";
+                std::cout << "=> State s25 => Gotten: eql(==)\n";
+                return Token(TokenType::EQL, "==", startLine, startColumn);
+            }
+            std::cout << "=> State s29 => Gotten: error(=)\n";
+            return Token(TokenType::ERROR_TOKEN, ErrorType::IllegalChar, startLine, startColumn, "=");
         // comment v2
         case '{':
         {
