@@ -97,7 +97,7 @@ Token LexicalAnalyzer::getNextToken()
 
     // Berada di state 0
     std::cout << "State 0 => ";
-    if (std::isalpha(currentChar) || currentChar == '_') {
+    if (std::isalpha(static_cast<unsigned char>(currentChar))) {
         token = SpecificScanners::scanAlpha(state, keywordsArray, tokenTypeArray);
     }
     else if (std::isdigit(currentChar)) {
@@ -108,10 +108,6 @@ Token LexicalAnalyzer::getNextToken()
     }
     else {
         token = SpecificScanners::scanSymbol(state);
-
-        if (token.type == TokenType::COMMENT) {
-            return getNextToken();
-        }
 
         if (token.value.length() == 1) {
              std::cout << token.value << " => char => State 0 => Gotten: " 

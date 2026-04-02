@@ -1,29 +1,163 @@
 programsy
-ident (test)
+ident (LexBrute)
 semicolon
-constsy
-ident (PI)
-becomes
-realcon (3.14)
-semicolon
-ident (CH)
-becomes
-charcon (A)
-semicolon
-ident (MSG)
-becomes
-string ('HELLO')
-semicolon
-varsy
-ident (x)
-comma
-ident (y)
-comma
-ident (i)
-colon
-ident (integer)
-semicolon
+comment (' ============================ ')
+comment (' 1) KEYWORDS + CASE TEST      ')
+comment (' ============================ ')
+andsy
+arraysy
 beginsy
+casesy
+constsy
+idiv
+dosy
+downtosy
+error
+endsy
+forsy
+functionsy
+ifsy
+ident (In)
+imod
+notsy
+ofsy
+orsy
+proceduresy
+programsy
+repeatsy
+thensy
+tosy
+typesy
+utilsy
+varsy
+whilesy
+comment (' ============================ ')
+comment (' 2) IDENT VS KEYWORD BOUNDARY ')
+comment (' ============================ ')
+arraysy
+ident (arrayzz)
+arraysy
+ident (zz)
+notsy
+ident (notx)
+ident (xnot)
+programsy
+ident (programx)
+ident (zzprogram)
+ident (abc123)
+ident (abc)
+intcon (123)
+ident (A1b2C3)
+comment (' underscore in ident should be invalid by QnA ')
+ident (C)
+ident (H)
+ident (name)
+ident (with)
+ident (underscore)
+comment (' ============================ ')
+comment (' 3) NUMERIC TESTS             ')
+comment (' ============================ ')
+intcon (0)
+intcon (0123)
+intcon (67)
+plus
+intcon (67)
+minus
+intcon (67)
+intcon (1)
+plus
+intcon (67)
+realcon (0.18)
+realcon (10.0)
+realcon (000.001)
+period
+intcon (18)
+realcon (12.34)
+period
+intcon (56)
+intcon (123)
+ident (N)
+comment (' ============================ ')
+comment (' 4) TEXT / QUOTE TESTS        ')
+comment (' ============================ ')
+string ('')
+charcon (')
+charcon (A)
+charcon (Z)
+charcon (0)
+charcon (a)
+string ('AB')
+string ('Baca buku ')
+string ('KBBI')
+string ('')
+string ('It')
+string ('s valid in Arion')
+string ('string\\nno-escape-special')
+comment (' ============================ ')
+comment (' 5) SYMBOLS + OPERATORS       ')
+comment (' ============================ ')
+semicolon
+comma
+period
+plus
+minus
+times
+rdiv
+lparent
+rparent
+lbrack
+error
+colon
+becomes
+lss
+leq
+neq
+gtr
+geq
+eql
+comment (' ============================ ')
+comment (' 6) COMMENTS                   ')
+comment (' ============================ ')
+comment (' simple comment ')
+comment (' multi
+line
+curly comment ')
+comment (' simple star comment ')
+comment (' multi
+line
+star comment ')
+comment (' mixed closer } still allowed per QnA ')
+comment (' mixed closer *) still allowed per QnA ')
+comment (' comment with *..*..')
+comment (' ============================ ')
+comment (' 7) WHITESPACE / SPLIT TEST   ')
+comment (' ============================ ')
+arraysy
+ident (zz)
+ident (arrayzz)
+ident (zz)
+ident (zz)
+ident (zzarray)
+ifsy
+ident (x)
+geq
+intcon (10)
+thensy
+ident (y)
+becomes
+ident (y)
+minus
+intcon (1)
+error
+ident (y)
+becomes
+ident (y)
+plus
+intcon (1)
+semicolon
+comment (' ============================ ')
+comment (' 8) COMBINED LINE STRESS      ')
+comment (' ============================ ')
 ident (x)
 becomes
 intcon (10)
@@ -35,6 +169,15 @@ plus
 intcon (2)
 times
 intcon (3)
+semicolon
+ident (f)
+becomes
+realcon (2.32203)
+semicolon
+ident (writeln)
+lparent
+string ('Sixty SEVENNNN')
+rparent
 semicolon
 ifsy
 ident (y)
@@ -53,6 +196,17 @@ ident (y)
 plus
 intcon (1)
 semicolon
+whilesy
+ident (y)
+neq
+intcon (0)
+dosy
+ident (y)
+becomes
+ident (y)
+minus
+intcon (1)
+semicolon
 forsy
 ident (i)
 becomes
@@ -65,22 +219,6 @@ becomes
 ident (y)
 plus
 ident (i)
-semicolon
-whilesy
-ident (y)
-neq
-intcon (0)
-dosy
-ident (y)
-becomes
-ident (y)
-minus
-intcon (1)
-semicolon
-ident (writeln)
-lparent
-string ('Sixty SEVENNNN')
-rparent
 semicolon
 endsy
 period
