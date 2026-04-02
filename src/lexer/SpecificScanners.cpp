@@ -115,13 +115,6 @@ namespace SpecificScanners
             }
         }
 
-        if (lexeme.empty())
-        {
-            char bad = state.advance();
-            std::cout << "=> State Final State => Gotten: error(" << bad << ")\n";
-            return Token(TokenType::ERROR_TOKEN, ErrorType::IllegalChar, startLine, startColumn, std::string(1, bad));
-        }
-
         std::string lowerLexeme = lexeme;
         std::transform(lowerLexeme.begin(), lowerLexeme.end(), lowerLexeme.begin(), [](unsigned char ch)
                        { return static_cast<char>(std::tolower(ch)); });
