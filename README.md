@@ -128,3 +128,65 @@ make all
 ```bash
 make run
 ```
+
+<div align="center">
+
+### 📊 Work Distribution
+
+</div>
+
+<div align="center">
+<strong>
+<table align="center">
+<tr align="center">
+<td>Name</td>
+<td>NIM</td>
+<td>Workload</td>
+<td>Percentage</td>
+</tr>
+
+<tr align="center">
+<td>Billie Bhaskara Wibawa</td>
+<td>13524024</td>
+<td>
+Implementation: Alpha Scanner, DFA State Builder<br>
+Diagram: Alpha Scanner, Report<br>
+Guidance: DFA State Implementation
+</td>
+<td>25%</td>
+</tr>
+
+<tr align="center">
+<td>Raysha Erviandika Putra</td>
+<td>13524050</td>
+<td>
+Implementation: Error Tracing, Numeric Scanner, Text Scanner, Symbol Scanner<br>
+Diagram: Alpha Scanner
+</td>
+<td>25%</td>
+</tr>
+
+<tr align="center">
+<td>Muhammad Naufal Romi Annafi</td>
+<td>13524058</td>
+<td>
+Diagram: Global DFA, Numeric Scanner, Text Scanner, Symbol Scanner<br>
+Report
+</td>
+<td>25%</td>
+</tr>
+
+<tr align="center">
+<td>Dzaki Ahmad Al Hussainy</td>
+<td>13524084</td>
+<td>
+Pre-Planning: Lexer Architecture Design<br>
+Testing & Implementation<br>
+Initial Program Structure
+</td>
+<td>25%</td>
+</tr>
+
+</table>
+</strong>
+</div>
