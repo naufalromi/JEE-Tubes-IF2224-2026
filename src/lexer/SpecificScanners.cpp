@@ -232,76 +232,104 @@ namespace SpecificScanners
             return Token(TokenType::ERROR_TOKEN, ErrorType::UnterminatedString, startLine, startColumn);
         }
 
-        // ''   -> empty string
-        // '''  -> invalid
-        // '''' -> charcon(')
+        std::cout << "' => State t0\n";
+
+        // t1 if next ' 
         if (state.peek() == '\'')
         {
-            state.advance(); 
+            state.advance();
+            std::cout << "' => State t1\n";
 
+            // t2 second '
             if (state.peek() == '\'')
             {
-                state.advance(); 
+                state.advance();
+                std::cout << "' => State t2\n";
 
+                // t3: cek quote ketiga
                 if (state.peek() == '\'')
                 {
-                    state.advance(); 
-                    return Token(TokenType::CHARCON, "'", startLine, startColumn);
+                    state.advance();
+                    std::cout << "' => State t3\n";
+
+                    // t4 4th '
+                    if (state.peek() == '\'')
+                    {
+                        state.advance();
+                        std::cout << "' => State Final State => Gotten: charcon(')\n";
+                        return Token(TokenType::CHARCON, "'", startLine, startColumn);
+                    }
+
+                    std::cout << "=> State Final State => Gotten: error(''' )\n";
+                    return Token(TokenType::ERROR_TOKEN, ErrorType::IllegalChar, startLine, startColumn, "'''");
                 }
 
-                return Token(TokenType::ERROR_TOKEN, ErrorType::IllegalChar, startLine, startColumn, "'''");
+                std::cout << "=> State Final State => Gotten: stringcon(" << lexeme << ")\n";
+                return Token(TokenType::STRINGCON, lexeme, startLine, startColumn);
             }
 
+            std::cout << "=> State Final State => Gotten: stringcon(" << lexeme << ")\n";
             return Token(TokenType::STRINGCON, lexeme, startLine, startColumn);
         }
 
-        // State t0 reads char
+        // t5 char after first '
         if (state.isAtEnd())
         {
+            std::cout << "=> State Final State => Gotten: error(" << lexeme << ")\n";
             return Token(TokenType::ERROR_TOKEN, ErrorType::UnterminatedString, startLine, startColumn, lexeme);
         }
 
         char first = state.advance();
-
         if (first == '\n' || first == '\0')
         {
+            std::cout << "=> State Final State => Gotten: error(" << lexeme << ")\n";
             return Token(TokenType::ERROR_TOKEN, ErrorType::UnterminatedString, startLine, startColumn, lexeme);
         }
 
         lexeme += first;
+        std::cout << first << " => State t4\n";
 
-        // State t1: if next thing is ' then charcon, else stringcon
         if (state.peek() == '\'')
         {
             state.advance();
+            std::cout << "' => State Final State => Gotten: charcon(" << lexeme << ")\n";
             return Token(TokenType::CHARCON, lexeme, startLine, startColumn);
         }
 
-        // State t2: stringcon
+        // t5 string
+        std::cout << "=> State t5\n";
         while (!state.isAtEnd())
         {
             char c = state.advance();
 
             if (c == '\'')
             {
+                // t6 meetin ' mid string
+                std::cout << "' => State t6\n";
+
                 if (state.peek() == '\'')
                 {
                     state.advance();
                     lexeme += '\'';
+                    std::cout << "'' => State t5\n";
                     continue;
                 }
 
+                std::cout << "=> State Final State => Gotten: stringcon(" << lexeme << ")\n";
                 return Token(TokenType::STRINGCON, lexeme, startLine, startColumn);
             }
 
             if (c == '\n' || c == '\0')
             {
+                std::cout << "=> State Final State => Gotten: error(" << lexeme << ")\n";
                 return Token(TokenType::ERROR_TOKEN, ErrorType::UnterminatedString, startLine, startColumn, lexeme);
             }
 
             lexeme += c;
+            std::cout << c << " => State t5\n";
         }
 
+        std::cout << "=> State Final State => Gotten: error(" << lexeme << ")\n";
         return Token(TokenType::ERROR_TOKEN, ErrorType::UnterminatedString, startLine, startColumn, lexeme);
     }
 
