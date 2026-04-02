@@ -128,5 +128,3 @@ make all
 ```bash
 make run
 ```
-
-```
