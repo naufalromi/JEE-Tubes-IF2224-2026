@@ -104,6 +104,8 @@ std::string tokenTypeToString(TokenType type){
         return "comment";
     case TokenType::END_OF_FILE:
         return "endoffile";
+    case TokenType::RECORDSY:
+        return "record";
     default:
         return "error";
     }
