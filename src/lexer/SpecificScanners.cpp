@@ -64,11 +64,14 @@ namespace SpecificScanners
          * Format State <state code>
          * 
          * State codes meaning:
-         * <idx1>_<idx2>_<idx3>...._<idxn>:
+         * a<idx1>_<idx2>_<idx3>...._<idxn>_i<length of lexeme>:
          * Means that this is a state where there are n keywords matched, with the keywords index in the
-         * original keywords array written. The order of the keywords are alphabetical
+         * original keywords array written. The order of the keywords are alphabetical. The last number is
+         * i<length of lexeme> which is used to avoid ambiguity between states. Without this, for example
+         * lets say the keyword abc is in index 1, and abcd is in index 2, the state "State a1_2" can 
+         * be ambiguous because the lexeme "a", "ab", and "abc" returns the same state.
          * 
-         * a0:
+         * aS:
          * Means that this is the start state of the Alpha scanner
          * 
          * a<size of the original keywordsArray>:
@@ -96,17 +99,19 @@ namespace SpecificScanners
 
             // LOGGING STATE TRANSITION
             if (first){
-                std::cout << std::endl << c << " => State a0\n";
+                std::cout << std::endl << c << " => State aS\n";
                 first = false;
             }
             else if(filteredKeywords.size()==0){
                 //State (number of keywords) represents the state in which there is no keywords matching left, thus
                 //signifying tis an ident
+                //e.g "a27" if the total number of keywords are 27
                 std::cout << c << " => State a" << std::to_string(keywordsArray.size()) << std::endl;
             }
             else if(filteredKeywords.size()>=2){
                 //Means there is at least one pair of [keyword, idx] but the lexeme scanning isnt yet done
-                std::cout << c << " => State " << getState(filteredKeywords) << std::endl;
+                //a<idx1>_<idx2>_<idx3>...._<idxn>_i<length of lexeme>
+                std::cout << c << " => State a" << getState(filteredKeywords) << "_i"<< std::to_string(lexeme.length()) <<std::endl;
             }
         }
 
