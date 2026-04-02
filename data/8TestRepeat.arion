@@ -1,0 +1,9 @@
+program TestRepeat;
+var
+  i: Integer;
+begin
+  i := 0;
+  repeat
+    i := i + 1;
+  until (i >= 10);
+end.

@@ -1,0 +1,8 @@
+PROGRAM CaseTest;
+VAR
+  myVar: INTEGER;
+BEGIN
+  MyVar := 7;
+  IF (myvar > 0) THEN
+    myVAR := 0;
+END.

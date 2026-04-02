@@ -1,0 +1,10 @@
+program TestCase;
+var
+  day: Integer;
+begin
+  day := 1;
+  case day of
+    1: day := 2;
+    2: day := 3;
+  end;
+end.

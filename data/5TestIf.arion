@@ -1,0 +1,10 @@
+program TestIf;
+var
+  x, y: Integer;
+begin
+  x := 10;
+  if (x > 5) then
+    y := 1
+  else
+    y := 0;
+end.

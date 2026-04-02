@@ -1,0 +1,7 @@
+program Hello;
+var
+  a, b: Integer;
+begin
+  a := 5;
+  b := a + 10;
+end.

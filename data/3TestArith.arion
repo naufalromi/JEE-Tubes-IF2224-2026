@@ -1,0 +1,12 @@
+program TestArith;
+var
+  a, b, c: Integer;
+  r: Real;
+begin
+  a := 10 + 3;
+  b := 10 - 3;
+  c := 10 * 3;
+  a := 10 div 3;
+  r := 10 / 3;
+  b := 10 MOD 3;
+end.

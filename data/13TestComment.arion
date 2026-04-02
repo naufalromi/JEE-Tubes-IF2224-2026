@@ -1,0 +1,8 @@
+program TestComment;
+{ Ini adalah komentar blok }
+var
+  x: Integer; { komentar inline }
+begin
+  (* komentar gaya lain *)
+  x := 42;
+end.
