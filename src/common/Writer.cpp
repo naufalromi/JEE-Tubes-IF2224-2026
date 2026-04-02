@@ -9,7 +9,8 @@ bool printWithValue(TokenType type)
            type == TokenType::INTCON ||
            type == TokenType::REALCON ||
            type == TokenType::CHARCON ||
-           type == TokenType::STRINGCON;
+           type == TokenType::STRINGCON ||
+           type == TokenType::COMMENT;
 }
 
 std::string getTokenName(TokenType type)
@@ -44,10 +45,10 @@ void writeOutput(const std::vector<Token> &tokens, const std::string &filePath)
         {
             outputFile << tokenName << " (\'" << token.value << "\')\n";
         }
-        // else if (token.type == TokenType::CHARCON)
-        // {
-        //     outputFile << tokenName << " (\'" << token.value << "\')\n";
-        // }
+        else if (token.type == TokenType::COMMENT)
+        {
+            outputFile << tokenName << " (\'" << token.value << "\')\n";
+        }
         else if (printWithValue(token.type))
         {
             outputFile << tokenName << " (" << token.value << ")\n";

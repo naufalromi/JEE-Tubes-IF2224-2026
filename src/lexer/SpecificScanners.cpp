@@ -86,7 +86,7 @@ namespace SpecificScanners
         std::vector<std::string> filteredKeywords;
         
         // Looping ini adalah State 1
-        while (std::isalnum(static_cast<unsigned char>(state.peek())) || state.peek() == '_')
+        while (std::isalnum(static_cast<unsigned char>(state.peek())))
         {
             char c = state.advance();
             lexeme += c;
@@ -113,6 +113,13 @@ namespace SpecificScanners
                 //a<idx1>_<idx2>_<idx3>...._<idxn>_i<length of lexeme>
                 std::cout << c << " => State a" << getState(filteredKeywords) << "_i"<< std::to_string(lexeme.length()) <<std::endl;
             }
+        }
+
+        if (lexeme.empty())
+        {
+            char bad = state.advance();
+            std::cout << "=> State Final State => Gotten: error(" << bad << ")\n";
+            return Token(TokenType::ERROR_TOKEN, ErrorType::IllegalChar, startLine, startColumn, std::string(1, bad));
         }
 
         std::string lowerLexeme = lexeme;
@@ -156,66 +163,71 @@ namespace SpecificScanners
         std::string lexeme = "";
         bool isReal = false;
 
-        // state on number
+        // State n0 -> n1: integer digits
         while (std::isdigit(static_cast<unsigned char>(state.peek())))
         {
-            lexeme += state.advance();
+            char c = state.advance();
+            lexeme += c;
+            std::cout << c << " => State n1\n";
         }
 
-        // if meet dot become real
+        // State n1 -> n2/n3: fraction part
         if (state.peek() == '.')
         {
 
             // incomplete real 
             if (!std::isdigit(static_cast<unsigned char>(state.peekNext())))
             {
-                lexeme += state.advance(); // consume '.'
+                char dot = state.advance(); // consume '.'
+                lexeme += dot;
+                std::cout << dot << " => State nErr\n";
+                std::cout << "=> State Final State => Gotten: error(" << lexeme << ")\n";
                 return Token(TokenType::ERROR_TOKEN, ErrorType::IncompleteReal, startLine, startColumn, lexeme);
             }
 
             isReal = true;
-            lexeme += state.advance();
+            char dot = state.advance();
+            lexeme += dot;
+            std::cout << dot << " => State n2\n";
 
             // read num again
             while (std::isdigit(static_cast<unsigned char>(state.peek())))
             {
-                lexeme += state.advance();
+                char c = state.advance();
+                lexeme += c;
+                std::cout << c << " => State n3\n";
             }
         }
 
-        // exponent cuz its cool
+        // Exponents gajadi support (QNA)
         if (state.peek() == 'e' || state.peek() == 'E')
         {
-            size_t backupIndex = state.currentIndex;
-            int backupLine = state.currentLine;
-            int backupColumn = state.currentColumn;
-
-            std::string exponentPart = "";
-            exponentPart += state.advance(); // e or E
+            std::string invalidLexeme = lexeme;
+            char e = state.advance();
+            invalidLexeme += e;
+            std::cout << e << " => State nErr\n";
 
             if (state.peek() == '+' || state.peek() == '-')
             {
-                exponentPart += state.advance();
+                char sign = state.advance();
+                invalidLexeme += sign;
+                std::cout << sign << " => State nErr\n";
             }
 
-            if (std::isdigit(static_cast<unsigned char>(state.peek())))
+            while (std::isdigit(static_cast<unsigned char>(state.peek())))
             {
-                isReal = true;
-                while (std::isdigit(static_cast<unsigned char>(state.peek())))
-                {
-                    exponentPart += state.advance();
-                }
-                lexeme += exponentPart;
+                char c = state.advance();
+                invalidLexeme += c;
+                std::cout << c << " => State nErr\n";
             }
-            else
-            {
-                // fallback if exponent not valid
-                state.currentIndex = backupIndex;
-                state.currentLine = backupLine;
-                state.currentColumn = backupColumn;
-            }
+
+            std::cout << "=> State Final State => Gotten: error(" << invalidLexeme << ")\n";
+            return Token(TokenType::ERROR_TOKEN, ErrorType::IllegalChar, startLine, startColumn, invalidLexeme);
         }
 
+        std::cout << "=> State Final State => Gotten: "
+                  << (isReal ? "realcon(" : "intcon(")
+                  << lexeme << ")\n";
         return Token(isReal ? TokenType::REALCON : TokenType::INTCON, lexeme, startLine, startColumn);
     }
 
@@ -225,31 +237,65 @@ namespace SpecificScanners
     {
         int startLine = state.currentLine;
         int startColumn = state.currentColumn;
-        std::string lexeme = "";
+        std::string lexeme;
 
         if (state.advance() != '\'')
         {
             return Token(TokenType::ERROR_TOKEN, ErrorType::UnterminatedString, startLine, startColumn);
         }
 
+        // ''   -> empty string
+        // '''  -> invalid
+        // '''' -> charcon(')
+        if (state.peek() == '\'')
+        {
+            state.advance(); 
+
+            if (state.peek() == '\'')
+            {
+                state.advance(); 
+
+                if (state.peek() == '\'')
+                {
+                    state.advance(); 
+                    return Token(TokenType::CHARCON, "'", startLine, startColumn);
+                }
+
+                return Token(TokenType::ERROR_TOKEN, ErrorType::IllegalChar, startLine, startColumn, "'''");
+            }
+
+            return Token(TokenType::STRINGCON, lexeme, startLine, startColumn);
+        }
+
+        // State t0 reads char
+        if (state.isAtEnd())
+        {
+            return Token(TokenType::ERROR_TOKEN, ErrorType::UnterminatedString, startLine, startColumn, lexeme);
+        }
+
+        char first = state.advance();
+
+        if (first == '\n' || first == '\0')
+        {
+            return Token(TokenType::ERROR_TOKEN, ErrorType::UnterminatedString, startLine, startColumn, lexeme);
+        }
+
+        lexeme += first;
+
+        // State t1: if next thing is ' then charcon, else stringcon
+        if (state.peek() == '\'')
+        {
+            state.advance();
+            return Token(TokenType::CHARCON, lexeme, startLine, startColumn);
+        }
+
+        // State t2: stringcon
         while (!state.isAtEnd())
         {
             char c = state.advance();
 
             if (c == '\'')
             {
-                // single quote ''
-                if (state.peek() == '\'')
-                {
-                    state.advance();
-                    lexeme += '\'';
-                    continue;
-                }
-
-                if (lexeme.length() == 1)
-                {
-                    return Token(TokenType::CHARCON, lexeme, startLine, startColumn);
-                }
                 return Token(TokenType::STRINGCON, lexeme, startLine, startColumn);
             }
 
@@ -273,22 +319,30 @@ namespace SpecificScanners
         int startLine = state.currentLine;
         int startColumn = state.currentColumn;
         char c = state.advance();
+        std::cout << c << " => State s0\n";
 
         switch (c)
         {
         case ';':
+            std::cout << "=> State s7 => Gotten: semicolon(;)\n";
             return Token(TokenType::SEMICOLON, ";", startLine, startColumn);
         case ',':
+            std::cout << "=> State s8 => Gotten: comma(,)\n";
             return Token(TokenType::COMMA, ",", startLine, startColumn);
         case '.':
+            std::cout << "=> State s9 => Gotten: period(.)\n";
             return Token(TokenType::PERIOD, ".", startLine, startColumn);
         case '+':
+            std::cout << "=> State s10 => Gotten: plus(+)\n";
             return Token(TokenType::PLUS, "+", startLine, startColumn);
         case '-':
+            std::cout << "=> State s11 => Gotten: minus(-)\n";
             return Token(TokenType::MINUS, "-", startLine, startColumn);
         case '*':
+            std::cout << "=> State s12 => Gotten: times(*)\n";
             return Token(TokenType::TIMES, "*", startLine, startColumn);
         case '/':
+            std::cout << "=> State s13 => Gotten: rdiv(/)\n";
             return Token(TokenType::RDIV, "/", startLine, startColumn);
 
         // comment v1
@@ -296,74 +350,102 @@ namespace SpecificScanners
             if (state.peek() == '*')
             {
                 state.advance(); // consume '*'
+                std::cout << "(* => State s5\n";
+                std::string commentText;
                 while (!state.isAtEnd())
                 {
                     char cc = state.advance();
                     if (cc == '*' && state.peek() == ')')
                     {
                         state.advance(); // consume ')'
-                        return Token(TokenType::COMMENT, "(**)", startLine, startColumn);
+                        std::cout << "*) => State s26\n";
+                        std::cout << "=> State s26 => Gotten: comment\n";
+                        return Token(TokenType::COMMENT, commentText, startLine, startColumn);
                     }
+                    commentText += cc;
                 }
+                std::cout << "=> State s27 => Gotten: error(comment)\n";
                 return Token(TokenType::ERROR_TOKEN, ErrorType::UnterminatedComment, startLine, startColumn);
             }
+            std::cout << "=> State s14 => Gotten: lparent(()\n";
             return Token(TokenType::LPARENT, "(", startLine, startColumn);
 
         case ')':
+            std::cout << "=> State s15 => Gotten: rparent())\n";
             return Token(TokenType::RPARENT, ")", startLine, startColumn);
         case '[':
+            std::cout << "=> State s16 => Gotten: lbrack([)\n";
             return Token(TokenType::LBRACK, "[", startLine, startColumn);
         case ']':
+            std::cout << "=> State s17 => Gotten: rbrack(])\n";
             return Token(TokenType::RBRACK, "]", startLine, startColumn);
 
         case ':':
             if (state.peek() == '=')
             {
                 state.advance();
+                std::cout << "= => State s1\n";
+                std::cout << "=> State s18 => Gotten: becomes(:=)\n";
                 return Token(TokenType::BECOMES, ":=", startLine, startColumn);
             }
+            std::cout << "=> State s19 => Gotten: colon(:)\n";
             return Token(TokenType::COLON, ":", startLine, startColumn);
 
         case '<':
             if (state.peek() == '=')
             {
                 state.advance();
+                std::cout << "= => State s2\n";
+                std::cout << "=> State s20 => Gotten: leq(<=)\n";
                 return Token(TokenType::LEQ, "<=", startLine, startColumn);
             }
             if (state.peek() == '>')
             {
                 state.advance();
+                std::cout << "> => State s3\n";
+                std::cout << "=> State s21 => Gotten: neq(<>)\n";
                 return Token(TokenType::NEQ, "<>", startLine, startColumn);
             }
+            std::cout << "=> State s22 => Gotten: lss(<)\n";
             return Token(TokenType::LSS, "<", startLine, startColumn);
 
         case '>':
             if (state.peek() == '=')
             {
                 state.advance();
+                std::cout << "= => State s4\n";
+                std::cout << "=> State s23 => Gotten: geq(>=)\n";
                 return Token(TokenType::GEQ, ">=", startLine, startColumn);
             }
+            std::cout << "=> State s24 => Gotten: gtr(>)\n";
             return Token(TokenType::GTR, ">", startLine, startColumn);
 
         case '=':
+            std::cout << "=> State s25 => Gotten: eql(=)\n";
             return Token(TokenType::EQL, "=", startLine, startColumn);
 
         // comment v2
         case '{':
         {
+            std::cout << "{ => State s6\n";
+            std::string commentText;
             while (!state.isAtEnd() && state.peek() != '}')
             {
-                state.advance();
+                commentText += state.advance();
             }
             if (state.isAtEnd())
             {
+                std::cout << "=> State s27 => Gotten: error(comment)\n";
                 return Token(TokenType::ERROR_TOKEN, ErrorType::UnterminatedComment, startLine, startColumn);
             }
             state.advance(); // consume '}'
-            return Token(TokenType::COMMENT, "{}", startLine, startColumn);
+            std::cout << "} => State s26\n";
+            std::cout << "=> State s26 => Gotten: comment\n";
+            return Token(TokenType::COMMENT, commentText, startLine, startColumn);
         }
 
         default:
+            std::cout << "=> State s28 => Gotten: error(" << c << ")\n";
             return Token(TokenType::ERROR_TOKEN, ErrorType::IllegalChar, startLine, startColumn, std::string(1, c));
         }
     }

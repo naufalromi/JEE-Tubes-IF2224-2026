@@ -2,14 +2,16 @@ program test;
 
 const
   PI := 3.14;
-  CH := 'A';
-  MSG := 'HELLO';
+  C_H := 'A';
+  reek := '''';
 
 var
   x, y, i: integer;
+  f: real;
 
 begin
   x := 10;
+  f := 2.32203;
   y := x + 2 * 3;
 
   if y >= 10 then
@@ -18,7 +20,9 @@ begin
     y := y + 1;
 
   { wow comment }
-  (* wow comment *)
+  (*
+  wow comment 
+  *)
 
   for i := 1 to 3 do
     y := y + i;
