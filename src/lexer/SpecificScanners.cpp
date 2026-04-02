@@ -3,55 +3,148 @@
 #include <iostream>
 #include <algorithm> // for transform
 
+
 namespace SpecificScanners
 {
+    /**
+     * @brief Given an array of keywords, checks how many of them are matching based on the current lexeme
+     * and returns all the matching keywords on a new string array
+     * 
+     * @param keywordsArray Keywords that are matched so far
+     * @param lexeme The current lexeme
+     * @return an array with the format of [keyword1, keyword1idx, keyword2, keyword2idx, ..., keywordn, keywordnidx] 
+     * The idx is the original idx from the original keywords array (to track states)
+     */
+    static std::vector<std::string> filterKeywords(const std::vector<std::string> &keywordsArray, std::string &lexeme){
+        std::vector<std::string> filteredKeywords;
+        int newCharIdx = lexeme.length()-1;
+        bool firstFilter = (lexeme.length()==1);
+
+        int incr = firstFilter?1:2;
+        for(size_t i = 0; i<keywordsArray.size(); i+=incr){
+            if(keywordsArray[i].length()>=(lexeme.length()) && std::tolower(static_cast<unsigned char>(keywordsArray[i][newCharIdx])) == std::tolower(static_cast<unsigned char>(lexeme[newCharIdx])) ){
+                filteredKeywords.push_back(keywordsArray[i]);
+                if(firstFilter){
+                    //This means that the keywordsArray is still the original keywordsArray and not
+                    //in the format of [keyword1, keyword1idx...]
+                    filteredKeywords.push_back(std::to_string(i));
+                }
+                else{
+                    //This means the keywordsArray is already in the format where the idx is placed
+                    //right after the keyword. Thus this push back preserves the original idx for consistency
+                    filteredKeywords.push_back(keywordsArray[i+1]);
+                }
+            }
+            // else it wont get added to the filtered keywords array
+        }
+
+        return filteredKeywords;
+    }
+    /**
+     * @brief Get the state based on the filtered array
+     * @param filteredKeywords 
+     * @return returns the state in the form of a string with the format idx1_idx2..._idxn
+     */
+    static std::string getState(std::vector<std::string> &filteredKeywords){
+        std::string state;
+        for(size_t i = 1; i<filteredKeywords.size(); i+=2){
+            if(i != 1){
+                state += "_";
+            }
+            state += filteredKeywords[i];
+        }
+        return state;
+    }
+
     // Alphanumeric (Identifier, Keyword)
-    Token scanAlpha(LexerState &state, const std::unordered_map<std::string, TokenType> &keywordsMap)
+    Token scanAlpha(LexerState &state, const std::vector<std::string> &keywordsArray, const std::vector<TokenType> &tokenTypeArray)
     {
+        /**
+         * State guides
+         * Format State <state code>
+         * 
+         * State codes meaning:
+         * a<idx1>_<idx2>_<idx3>...._<idxn>_i<length of lexeme>:
+         * Means that this is a state where there are n keywords matched, with the keywords index in the
+         * original keywords array written. The order of the keywords are alphabetical. The last number is
+         * i<length of lexeme> which is used to avoid ambiguity between states. Without this, for example
+         * lets say the keyword abc is in index 1, and abcd is in index 2, the state "State a1_2" can 
+         * be ambiguous because the lexeme "a", "ab", and "abc" returns the same state.
+         * 
+         * aS:
+         * Means that this is the start state of the Alpha scanner
+         * 
+         * a<size of the original keywordsArray>:
+         * Means that it is definitely an ident and not a keyword, but the lexeme is not yet complete (belum ketemu spasi)
+         */
+
+
         int startLine = state.currentLine;
         int startColumn = state.currentColumn;
-        int stateCount = 1;
         bool first = true;
         std::string lexeme = "";
-
+        std::vector<std::string> filteredKeywords;
+        
         // Looping ini adalah State 1
-        // TODO how to make the state is finite?
         while (std::isalnum(static_cast<unsigned char>(state.peek())) || state.peek() == '_')
         {
             char c = state.advance();
             lexeme += c;
 
-            // LOGGING STATE TRANSITION
-            if (first)
-            {
-                std::cout << c << " => State " << stateCount << " ";
-                first = false;
-            }
-            else
-            {
-                std::cout << c << " => State " << stateCount;
+            if (first) {
+                filteredKeywords = filterKeywords(keywordsArray, lexeme);
+            } else {
+                filteredKeywords = filterKeywords(filteredKeywords, lexeme);
             }
 
-            stateCount++;
+            // LOGGING STATE TRANSITION
+            if (first){
+                std::cout << std::endl << c << " => State aS\n";
+                first = false;
+            }
+            else if(filteredKeywords.size()==0){
+                //State (number of keywords) represents the state in which there is no keywords matching left, thus
+                //signifying tis an ident
+                //e.g "a27" if the total number of keywords are 27
+                std::cout << c << " => State a" << std::to_string(keywordsArray.size()) << std::endl;
+            }
+            else if(filteredKeywords.size()>=2){
+                //Means there is at least one pair of [keyword, idx] but the lexeme scanning isnt yet done
+                //a<idx1>_<idx2>_<idx3>...._<idxn>_i<length of lexeme>
+                std::cout << c << " => State a" << getState(filteredKeywords) << "_i"<< std::to_string(lexeme.length()) <<std::endl;
+            }
         }
 
         std::string lowerLexeme = lexeme;
         std::transform(lowerLexeme.begin(), lowerLexeme.end(), lowerLexeme.begin(), [](unsigned char ch)
                        { return static_cast<char>(std::tolower(ch)); });
 
-        auto it = keywordsMap.find(lowerLexeme);
-        if (it != keywordsMap.end())
-        {
-            // LOGGING ACCEPTING STATE (Keyword)
-            // Keknya bagian final state lebih bagus dibikin identifier gitu untuk masing-masing token Type
-            std::cout << " => State " << "Final State" << " => Gotten: keyword(" << lexeme << ")\n";
-            return Token(it->second, lexeme, startLine, startColumn);
+        /*
+        Because the keywords are ordered alphabetically, if there is more than 1 keyword matching in the final
+        filtered keywords, it means it will more closely match the keyword on the smaller index
+        */
+        bool isIdent;
+        if(filteredKeywords.size()==0){
+            isIdent = true;
+        }
+        else{
+            if(filteredKeywords[0].length()!=lexeme.length()) isIdent = true;
+            else isIdent = false;
         }
 
-        // LOGGING ACCEPTING STATE (Identifier)
-        // TODO Ada bug jadi semuanya default to identifier
-        std::cout << "=> State " << "Final State" << " => Gotten: ident(" << lexeme << ")\n";
-        return Token(TokenType::IDENT, lexeme, startLine, startColumn);
+        if(isIdent){
+            // LOGGING ACCEPTING STATE (Identifier)
+            std::cout << "=> State " << "Final State" << " => Gotten: ident(" << lexeme << ")\n";
+            return Token(TokenType::IDENT, lexeme, startLine, startColumn);
+        }
+        else
+        {
+            // LOGGING ACCEPTING STATE (Keyword)
+            std::cout << "=> State " << "Final State" << " => Gotten: keyword(" << lexeme << ")\n";
+            TokenType t = tokenTypeArray[std::stoi(filteredKeywords[1])];
+            return Token(t, lexeme, startLine, startColumn);
+        }
+
     }
 
     // Numeric (Int, Real)

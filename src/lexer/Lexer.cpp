@@ -2,38 +2,68 @@
 #include "../common/Error.hpp"
 #include "SpecificScanners.hpp"
 #include "iostream"
-void LexicalAnalyzer::initKeywordsMap()
-{
-    // Keywords bawaan
-    keywordsMap["const"] = TokenType::CONSTSY;
-    keywordsMap["type"] = TokenType::TYPESY;
-    keywordsMap["var"] = TokenType::VARSY;
-    keywordsMap["function"] = TokenType::FUNCTIONSY;
-    keywordsMap["procedure"] = TokenType::PROCEDURESY;
-    keywordsMap["array"] = TokenType::ARRAYSY;
-    keywordsMap["record"] = TokenType::RECORDSY;
-    keywordsMap["program"] = TokenType::PROGRAMSY;
-    keywordsMap["begin"] = TokenType::BEGINSY;
-    keywordsMap["if"] = TokenType::IFSY;
-    keywordsMap["case"] = TokenType::CASESY;
-    keywordsMap["repeat"] = TokenType::REPEATSY;
-    keywordsMap["while"] = TokenType::WHILESY;
-    keywordsMap["for"] = TokenType::FORSY;
-    keywordsMap["end"] = TokenType::ENDSY;
-    keywordsMap["else"] = TokenType::ELSESY;
-    keywordsMap["until"] = TokenType::UNTILSY;
-    keywordsMap["of"] = TokenType::OFSY;
-    keywordsMap["do"] = TokenType::DOSY;
-    keywordsMap["to"] = TokenType::TOSY;
-    keywordsMap["downto"] = TokenType::DOWNTOSY;
-    keywordsMap["then"] = TokenType::THENSY;
 
-    //  5 Word-Operators (Operator berbentuk kata)
-    keywordsMap["not"] = TokenType::NOTSY;
-    keywordsMap["div"] = TokenType::IDIV;
-    keywordsMap["mod"] = TokenType::IMOD;
-    keywordsMap["and"] = TokenType::ANDSY;
-    keywordsMap["or"] = TokenType::ORSY;
+
+void LexicalAnalyzer::initKeywordsArray(){
+    keywordsArray = {
+        "and",
+        "array",
+        "begin",
+        "case",
+        "const",
+        "div",
+        "do",
+        "downto",
+        "else",
+        "end",
+        "for",
+        "function",
+        "if",
+        "mod",
+        "not",
+        "of",
+        "or",
+        "procedure",
+        "program",
+        "record",
+        "repeat",
+        "then",
+        "to",
+        "type",
+        "until",
+        "var",
+        "while"
+    };
+
+    tokenTypeArray = {
+        TokenType::ANDSY,       // "and"
+        TokenType::ARRAYSY,     // "array"
+        TokenType::BEGINSY,     // "begin"
+        TokenType::CASESY,      // "case"
+        TokenType::CONSTSY,     // "const"
+        TokenType::IDIV,        // "div"
+        TokenType::DOSY,        // "do"
+        TokenType::DOWNTOSY,    // "downto"
+        TokenType::ELSESY,      // "else"
+        TokenType::ENDSY,       // "end"
+        TokenType::FORSY,       // "for"
+        TokenType::FUNCTIONSY,  // "function"
+        TokenType::IFSY,        // "if"
+        TokenType::IMOD,        // "mod"
+        TokenType::NOTSY,       // "not"
+        TokenType::OFSY,        // "of"
+        TokenType::ORSY,        // "or"
+        TokenType::PROCEDURESY, // "procedure"
+        TokenType::PROGRAMSY,   // "program"
+        TokenType::RECORDSY,    // "record"
+        TokenType::REPEATSY,    // "repeat"
+        TokenType::THENSY,      // "then"
+        TokenType::TOSY,        // "to"
+        TokenType::TYPESY,      // "type"
+        TokenType::UNTILSY,     // "until"
+        TokenType::VARSY,       // "var"
+        TokenType::WHILESY      // "while"
+    };
 }
 
 void LexicalAnalyzer::skipWhitespace()
@@ -45,7 +75,7 @@ void LexicalAnalyzer::skipWhitespace()
 
 LexicalAnalyzer::LexicalAnalyzer(const std::string &sourceCode) : state(sourceCode)
 {
-    initKeywordsMap();
+    initKeywordsArray();
 };
 
 // TODO : Implementasi Destructor
@@ -68,7 +98,7 @@ Token LexicalAnalyzer::getNextToken()
     // Berada di state 0
     std::cout << "State 0 => ";
     if (std::isalpha(currentChar) || currentChar == '_') {
-        token = SpecificScanners::scanAlpha(state, keywordsMap);
+        token = SpecificScanners::scanAlpha(state, keywordsArray, tokenTypeArray);
     }
     else if (std::isdigit(currentChar)) {
         token = SpecificScanners::scanNumeric(state);

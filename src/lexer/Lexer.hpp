@@ -12,13 +12,14 @@ private:
     LexerState state;
 
     // Loopup table untuk memetekan string "var", "begin" ke Tokentype
-    std::unordered_map<std::string, TokenType> keywordsMap;
+    std::vector<std::string> keywordsArray;
+    std::vector<TokenType> tokenTypeArray;
 
     // Menyimpan semua error
     std::vector<Token> errorTokens;
 
     // Fungsi internal untuk mendaftarkan semua keyword ke dalam map saat inisialisasi
-    void initKeywordsMap();
+    void initKeywordsArray();
 
     // Fungsi utilitas untuk melewati spasi, tab, dan newline (Whitespace)
     void skipWhitespace();
@@ -26,6 +27,7 @@ private:
 public:
     LexicalAnalyzer(const std::string& sourceCode);
 
+    
     // CORE METHOD: Global DFA Dispatcher
     // Fungsi ini akan dipanggil berulang kali untuk mendapatkan token satu per satu
     Token getNextToken();
