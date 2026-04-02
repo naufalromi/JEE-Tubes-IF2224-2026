@@ -134,14 +134,12 @@ namespace SpecificScanners
 
         if(isIdent){
             // LOGGING ACCEPTING STATE (Identifier)
-            // TODO Ada bug jadi semuanya default to identifier
             std::cout << "=> State " << "Final State" << " => Gotten: ident(" << lexeme << ")\n";
             return Token(TokenType::IDENT, lexeme, startLine, startColumn);
         }
         else
         {
             // LOGGING ACCEPTING STATE (Keyword)
-            // Keknya bagian final state lebih bagus dibikin identifier gitu untuk masing-masing token Type
             std::cout << "=> State " << "Final State" << " => Gotten: keyword(" << lexeme << ")\n";
             TokenType t = tokenTypeArray[std::stoi(filteredKeywords[1])];
             return Token(t, lexeme, startLine, startColumn);
