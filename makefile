@@ -34,25 +34,6 @@ build/%.o: src/%.cpp
 	@echo "Compiling $<..."
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-build/%.o: src/mesh/%.cpp
-	@mkdir -p $(dir $@)
-	@echo "Compiling $<..."
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-build/%.o: src/io/%.cpp
-	@mkdir -p $(dir $@)
-	@echo "Compiling $<..."
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-build/%.o: src/octree/%.cpp
-	@mkdir -p $(dir $@)
-	@echo "Compiling $<..."
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-build/%.o: src/mathUtils/%.cpp
-	@mkdir -p $(dir $@)
-	@echo "Compiling $<..."
-	$(CXX) $(CXXFLAGS) -c $< -o $@
 # Membersihkan File Hasil Compile (Dijalankan dengan 'make clean')
 clean: 
 	@echo "Membersihkan file build..."
