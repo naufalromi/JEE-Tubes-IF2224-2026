@@ -286,6 +286,13 @@ namespace SpecificScanners
 
             if (c == '\'')
             {
+                if (state.peek() == '\'')
+                {
+                    state.advance();
+                    lexeme += '\'';
+                    continue;
+                }
+
                 return Token(TokenType::STRINGCON, lexeme, startLine, startColumn);
             }
 
