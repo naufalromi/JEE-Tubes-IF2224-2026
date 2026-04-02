@@ -120,6 +120,7 @@ git clone https://github.com/naufalromi/JEE-Tubes-IF2224-2026.git
 
 ```bash
 cd JEE-Tubes-IF2224-2026
+make clean
 make all
 ```
 
