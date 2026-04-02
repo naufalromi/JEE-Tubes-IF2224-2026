@@ -93,16 +93,13 @@ namespace SpecificScanners
 
             if (first) {
                 filteredKeywords = filterKeywords(keywordsArray, lexeme);
+                first = false;
             } else {
                 filteredKeywords = filterKeywords(filteredKeywords, lexeme);
             }
 
             // LOGGING STATE TRANSITION
-            if (first){
-                std::cout << std::endl << c << " => State aS\n";
-                first = false;
-            }
-            else if(filteredKeywords.size()==0){
+            if(filteredKeywords.size()==0){
                 //State (number of keywords) represents the state in which there is no keywords matching left, thus
                 //signifying tis an ident
                 //e.g "a27" if the total number of keywords are 27
