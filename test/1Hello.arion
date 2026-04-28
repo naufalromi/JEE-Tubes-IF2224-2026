@@ -1,7 +1,13 @@
 program Hello;
 var
-  a, b: Integer;
+    x, y, z: Integer;
 begin
-  a := 5;
-  b := a + 10;
+    x := 1;
+    y := x + 9;
+    z := y * 2;
+    writeln('Hello, world');
+    writeln('This is a longer parser test');
+    writeln(x);
+    writeln(y);
+    writeln(z)
 end.

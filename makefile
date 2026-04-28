@@ -11,6 +11,7 @@ BUILD_DIR = build
 SRCS = $(SRC_DIR)/main.cpp\
 	   $(wildcard $(SRC_DIR)/common/*.cpp)\
 	   $(wildcard $(SRC_DIR)/lexer/*.cpp)\
+	   $(wildcard $(SRC_DIR)/syntax/*.cpp)\
 
 # Menentuka file Object (.o)
 # Mengubah path src/xxx/file.cpp menjadi build/xxx/file.o
