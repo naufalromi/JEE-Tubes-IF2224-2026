@@ -9,23 +9,47 @@
 
 namespace
 {
-    void printParseTree(const std::shared_ptr<TreeNode> &node, int depth = 0)
+    std::string printNode(const std::shared_ptr<TreeNode> &node)
+    {
+        if (node == nullptr)
+        {
+            return "";
+        }
+
+        std::string label = node->typeString();
+        if (!node->value.empty())
+        {
+            label += "(" + node->value + ")";
+        }
+
+        return label;
+    }
+
+    void printParseTree(const std::shared_ptr<TreeNode> &node, const std::string &prefix = "", bool last = true, bool root = true)
     {
         if (node == nullptr)
         {
             return;
         }
 
-        std::cout << std::string(depth * 2, ' ') << node->typeString();
-        if (!node->value.empty())
+        if (root)
         {
-            std::cout << " (" << node->value << ")";
+            std::cout << printNode(node) << '\n';
         }
-        std::cout << '\n';
-
-        for (const auto &child : node->children)
+        else
         {
-            printParseTree(child, depth + 1);
+            std::cout << prefix << (last ? "└── " : "├── ") << printNode(node) << '\n';
+        }
+
+        std::string childPrefix = prefix;
+        if (!root)
+        {
+            childPrefix += last ? "    " : "│   ";
+        }
+
+        for (size_t i = 0; i < node->children.size(); ++i)
+        {
+            printParseTree(node->children[i], childPrefix, i + 1 == node->children.size(), false);
         }
     }
 }

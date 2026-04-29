@@ -1,4 +1,10 @@
-program ParseOne;
+program Hello;
+
+var
+  a, b: integer;
+
 begin
-    x := 1
+  a := 5;
+  b := a + 10;
+  writeln('Result = ', b);
 end.
