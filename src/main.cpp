@@ -44,14 +44,32 @@ int main()
         // std::cout << "Output file path: ";
         // std::cin >> outputPath;
 
-        inputPath = "test/2TestConst.arion";
+        std::string inputPat;
         outputPath = "output/output.txt";
-
+        
+        int filenum;
         int typeChoice;
+
         std::cout << "1. Lexer" << std::endl;
         std::cout << "2. Parser" << std::endl;
+
         std::cout << "Choose Type: ";
         std::cin >> typeChoice;
+
+        std::cout << "Choose Testcase: ";
+        std::cin >> filenum;
+
+        switch (typeChoice)
+        {
+        case 1:
+            inputPath = "test/lexer/" + std::to_string(filenum) + ".arion";
+            break;
+        case 2:
+            inputPath = "test/parser/" + std::to_string(filenum) + ".arion";
+            break;
+        default:
+            break;
+        }
 
         // std::string sourceCode = "program Hallo\n";
         try
