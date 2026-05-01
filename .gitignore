@@ -1,0 +1,14 @@
+# Build artifacts
+build/
+jeecompiler
+
+# OS files
+.DS_Store
+*.swp
+*.swo
+*~
+
+# IDE files
+.vscode/
+.idea/
+*.swp

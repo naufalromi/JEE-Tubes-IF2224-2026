@@ -1,7 +1,9 @@
 program Hello;
 var
   a, b: Integer;
+  c : Real;
 begin
   a := 5;
   b := a + 10;
+  c := 3.123;
 end.

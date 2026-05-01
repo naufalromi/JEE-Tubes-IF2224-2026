@@ -3,6 +3,6 @@ var
   arr: array [1..5] of Integer;
   i: Integer;
 begin
-  arr[1] := 99;
-  i := arr[1];
+  {arr[1] := 99;
+  i := arr[1];}
 end.

@@ -1,8 +1,8 @@
 program TestRecord;
 type
-  Point = record
+  Point == record
     x: Integer;
-    y: Integer;
+    y: Integer
   end;
 var
   p: Point;

@@ -1,0 +1,15 @@
+program TestLogic;
+var
+  a, b: Integer;
+  p, q, r: Boolean;
+begin
+  p := a == b;
+  q := a <> b;
+  r := a > b;
+  p := a >= b;
+  q := a < b;
+  r := a <= b;
+  p := NOT q;
+  r := p AND q;
+  p := q OR r;
+end.

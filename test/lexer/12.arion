@@ -1,5 +1,8 @@
 program TestSubprogram;
 
+var
+  result: Integer;
+
 function Add(a, b: Integer): Integer;
 begin
   Add := a + b;
@@ -10,8 +13,11 @@ begin
   x := x + 1;
 end;
 
-var
-  result: Integer;
+begin
+  result := Add(3, 4);
+  Print(result);
+end.
+
 begin
   result := Add(3, 4);
   Print(result);

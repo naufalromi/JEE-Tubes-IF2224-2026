@@ -5,4 +5,5 @@ const
      Grade := 'A';
      School := 'IRK'; 
      var x: Integer; 
-begin x := MaxVal; end.
+begin x := MaxVal;
+end.

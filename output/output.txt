@@ -1,0 +1,10 @@
+programsy
+ident (Hello)
+semicolon
+beginsy
+ident (x)
+becomes
+intcon (1)
+endsy
+period
+endoffile

@@ -48,6 +48,8 @@ std::string tokenTypeToString(TokenType type){
         return "rparent";
     case TokenType::LBRACK:
         return "lbrack";
+    case TokenType::RBRACK:
+        return "rbrack";
     case TokenType::COMMA:
         return "comma";
     case TokenType::SEMICOLON:

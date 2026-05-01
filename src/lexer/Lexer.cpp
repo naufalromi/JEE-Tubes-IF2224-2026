@@ -118,7 +118,6 @@ Token LexicalAnalyzer::getNextToken()
     return token;
 }
 
-// TODO : Implementasi Langsung mengubah seluruh source code menjadi daftar token
 std::vector<Token> LexicalAnalyzer::tokenizeAll()
 {
     errorTokens.clear();
@@ -126,9 +125,16 @@ std::vector<Token> LexicalAnalyzer::tokenizeAll()
     Token currentToken = getNextToken();
 
     while (currentToken.type != TokenType::END_OF_FILE)
-    {
+    {   
+        // Skipping Comments
+        if (currentToken.type == TokenType::COMMENT){
+            currentToken = getNextToken();
+        }
         currentToken.type == TokenType::ERROR_TOKEN ? errorTokens.push_back(currentToken) : tokens.push_back(currentToken);
+            /* code */
+        
         currentToken = getNextToken();
+
     }
 
     // Memasukan EOF
