@@ -1,8 +1,24 @@
-program TestArray;
+program TestSubprogram;
+
 var
-  arr: array [1..5] of Integer;
-  i: Integer;
+  result: Integer;
+
+function Add(a, b: Integer): Integer;
 begin
-  arr[1] := 99;
-  i := arr[1];
+  Add := a + b;
+end;
+
+procedure Print(x: Integer);
+begin
+  x := x + 1;
+end;
+
+begin
+  result := Add(3, 4);
+  Print(result);
+end.
+
+begin
+  result := Add(3, 4);
+  Print(result);
 end.

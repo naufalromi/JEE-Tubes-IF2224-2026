@@ -1,5 +1,7 @@
 
 #include "Parser.hpp"
+#include "iostream"
+
 
 Parser::Parser(const std::vector<Token>& tokens)
     : tokens(tokens), pos(0) {}
@@ -394,6 +396,7 @@ std::shared_ptr<TreeNode> Parser::parseStatement() {
         need(node, parseWhileStatement()) ||
         need(node, parseRepeatStatement()) ||
         need(node, parseForStatement()) ||
+        need(node, parseCompoundStatement())||
         need(node, parseProcedureCall())) {
         return node;
     }
@@ -594,11 +597,24 @@ std::shared_ptr<TreeNode> Parser::parseFactor() {
     size_t saved = save();
     auto node = std::make_shared<TreeNode>(NodeType::Factor);
     
-    if (need(node, parseProcedureCall())) return node;
-    restore(saved);
+    // Cek untuk for procedure call
+    size_t CheckCallSaved = save();
+    auto dummyNode = std::make_shared<TreeNode>(NodeType::Ident);
+
+    if (need(dummyNode, terminal(TokenType::IDENT, NodeType::Ident)))
+    {
+        if (match(TokenType::LPARENT))
+        {
+            restore(CheckCallSaved);
+            if (need(node, parseProcedureCall())) return node;
+        }
+    }
+    restore(CheckCallSaved);
+
 
     if (need(node, terminal(TokenType::IDENT, NodeType::Ident)) ||
     need(node, terminal(TokenType::INTCON, NodeType::IntCon)) ||
+    need(node, terminal(TokenType::REALCON, NodeType::RealCon)) ||
     need(node, terminal(TokenType::CHARCON, NodeType::CharCon)) ||
     need(node, terminal(TokenType::STRINGCON, NodeType::String))) return node;
     restore(saved);
@@ -668,3 +684,43 @@ const Token& Parser::peek(int offset) const {
 const Token& Parser::advance() {
 	return tokens[pos++];
 }
+
+
+std::string Parser::printNode(const std::shared_ptr<TreeNode> &node){
+    if (node == nullptr){
+        return "";
+    }
+
+    std::string label = node->typeString();
+    if (!node->value.empty()){
+        label += "(" + node->value + ")";
+    }
+    return label;
+}
+
+void Parser::printParseTree(const std::shared_ptr<TreeNode> &node, const std::string &prefix = "", bool last = true, bool root = true){
+    if (node == nullptr)
+    {
+            return;
+        }
+
+        if (root)
+        {
+            std::cout << printNode(node) << '\n';
+        }
+        else
+        {
+            std::cout << prefix << (last ? "└── " : "├── ") << printNode(node) << '\n';
+        }
+
+        std::string childPrefix = prefix;
+        if (!root)
+        {
+            childPrefix += last ? "    " : "│   ";
+        }
+
+        for (size_t i = 0; i < node->children.size(); ++i)
+        {
+            printParseTree(node->children[i], childPrefix, i + 1 == node->children.size(), false);
+        }
+    }

@@ -145,7 +145,6 @@ namespace SpecificScanners
     }
 
     // Numeric (Int, Real)
-    // TODO : Implement scan numeric
     Token scanNumeric(LexerState &state)
     {
         int startLine = state.currentLine;
@@ -162,7 +161,7 @@ namespace SpecificScanners
         }
 
         // State n1 -> n2/n3: fraction part
-        if (state.peek() == '.')
+        if (state.peek() == '.' && state.peekNext() != '.')
         {
 
             char dot = state.advance();
@@ -220,7 +219,6 @@ namespace SpecificScanners
     }
 
     // Text (Char, String)
-    // TODO : Implement scan text
     Token scanText(LexerState &state)
     {
         int startLine = state.currentLine;
@@ -334,7 +332,6 @@ namespace SpecificScanners
     }
 
     // Symbols & Comments
-    // TODO : Implement scan symbol
 
     // self... explanatory
     Token scanSymbol(LexerState &state)

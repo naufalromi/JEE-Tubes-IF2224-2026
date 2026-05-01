@@ -1,9 +1,8 @@
-program TestRepeat;
+program TestArray;
 var
+  arr: array [1..5] of Integer;
   i: Integer;
 begin
-  i := 0;
-  repeat
-    i := i + 1;
-  until (i >= 10);
+  {arr[1] := 99;
+  i := arr[1];}
 end.

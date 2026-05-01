@@ -1,8 +1,11 @@
-program TestComment;
-{ Ini adalah komentar blok }
+program error;
+
 var
-  x: Integer; { komentar inline }
+  a, b: integer;
+
 begin
-  (* komentar gaya lain *)
-  x := 42;
+  a := 203.;
+  b := @123;
+  writeln('hello);
+  (* ga lengkap
 end.

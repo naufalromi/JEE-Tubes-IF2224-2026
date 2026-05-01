@@ -1,12 +1,8 @@
-program TestRecord;
-type
-  Point = record
-    x: Integer;
-    y: Integer;
-  end;
+program TestComment;
+{ Ini adalah komentar blok }
 var
-  p: Point;
+  x: Integer; { komentar inline }
 begin
-  p.x := 3;
-  p.y := 4;
+  (* komentar gaya lain *)
+  x := 42;
 end.

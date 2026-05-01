@@ -70,6 +70,9 @@ public:
 
     bool need(const std::shared_ptr<TreeNode>& parent, const std::shared_ptr<TreeNode>& child);
 
+    static std::string printNode(const std::shared_ptr<TreeNode> &node);
+    static void printParseTree(const std::shared_ptr<TreeNode> &node, const std::string &prefix , bool last, bool root );
+
 	const std::vector<Token>& tokens;
 	size_t pos;
 };

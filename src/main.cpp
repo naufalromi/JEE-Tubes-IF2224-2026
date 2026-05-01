@@ -7,52 +7,6 @@
 #include <iostream>
 #include <memory>
 
-namespace
-{
-    std::string printNode(const std::shared_ptr<TreeNode> &node)
-    {
-        if (node == nullptr)
-        {
-            return "";
-        }
-
-        std::string label = node->typeString();
-        if (!node->value.empty())
-        {
-            label += "(" + node->value + ")";
-        }
-
-        return label;
-    }
-
-    void printParseTree(const std::shared_ptr<TreeNode> &node, const std::string &prefix = "", bool last = true, bool root = true)
-    {
-        if (node == nullptr)
-        {
-            return;
-        }
-
-        if (root)
-        {
-            std::cout << printNode(node) << '\n';
-        }
-        else
-        {
-            std::cout << prefix << (last ? "└── " : "├── ") << printNode(node) << '\n';
-        }
-
-        std::string childPrefix = prefix;
-        if (!root)
-        {
-            childPrefix += last ? "    " : "│   ";
-        }
-
-        for (size_t i = 0; i < node->children.size(); ++i)
-        {
-            printParseTree(node->children[i], childPrefix, i + 1 == node->children.size(), false);
-        }
-    }
-}
 
 int main()
 {
@@ -83,17 +37,7 @@ int main()
         std::cout << "Choose Testcase: ";
         std::cin >> filenum;
 
-        switch (typeChoice)
-        {
-        case 1:
-            inputPath = "test/lexer/" + std::to_string(filenum) + ".arion";
-            break;
-        case 2:
-            inputPath = "test/parser/" + std::to_string(filenum) + ".arion";
-            break;
-        default:
-            break;
-        }
+        inputPath = "test/lexer/" + std::to_string(filenum) + ".arion";
 
         // std::string sourceCode = "program Hallo\n";
         try
@@ -126,7 +70,7 @@ int main()
                 // }
 
                 std::cout << "Parse tree:\n";
-                printParseTree(parseTree);
+                Parser::printParseTree(parseTree,"",true,true);
 
                 return 0;
             }
