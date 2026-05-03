@@ -14,5 +14,5 @@ begin
         y := y + x;
     repeat
         y := y - 1
-    until y = 0
+    until y == 0
 end.

@@ -1,10 +1,38 @@
 programsy
-ident (Hello)
+ident (TestString)
+semicolon
+varsy
+ident (c)
+colon
+ident (Char)
+semicolon
+ident (s)
+colon
+ident (String)
 semicolon
 beginsy
-ident (x)
+ident (c)
 becomes
-intcon (1)
+charcon (x)
+semicolon
+ident (s)
+becomes
+string ('Halo Dunia')
+semicolon
+ident (c)
+becomes
+string ('''')
+semicolon
+ident (s)
+becomes
+string ('Hari Jum'at')
+semicolon
+ident (s)
+becomes
+string ('')
+semicolon
+ident (s)
+becomes
 endsy
 period
 endoffile
