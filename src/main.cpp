@@ -37,7 +37,11 @@ int main()
         std::cout << "Choose Testcase: ";
         std::cin >> filenum;
 
-        inputPath = "test/lexer/" + std::to_string(filenum) + ".arion";
+        if (typeChoice == 2) {
+            inputPath = "test/parser/" + std::to_string(filenum) + ".arion";
+        } else {
+            inputPath = "test/lexer/" + std::to_string(filenum) + ".arion";
+        }
 
         // std::string sourceCode = "program Hallo\n";
         try

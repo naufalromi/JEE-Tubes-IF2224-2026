@@ -56,6 +56,9 @@ public:
     std::shared_ptr<TreeNode> parseRelationalOperator();     // <relational-operator>
     std::shared_ptr<TreeNode> parseAdditiveOperator();       // <additive-operator>
     std::shared_ptr<TreeNode> parseMultiplicativeOperator(); // <multiplicative-operator>
+    // Revisi
+    std::shared_ptr<TreeNode> parseVariable();                // <variable>
+    std::shared_ptr<TreeNode> parseIndexList();               // <index-list>
 
 	const Token& peek(int offset = 0) const;
 	const Token& advance();

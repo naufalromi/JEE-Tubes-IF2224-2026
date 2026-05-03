@@ -210,10 +210,10 @@ std::shared_ptr<TreeNode> Parser::parseRange() {
     size_t saved = save();
     auto node = std::make_shared<TreeNode>(NodeType::Range);
 
-    if (!need(node, parseExpression())) return fail(saved);
+    if (!need(node, parseConstant())) return fail(saved);
     if (!need(node, terminal(TokenType::PERIOD, NodeType::Period))) return fail(saved);
     if (!need(node, terminal(TokenType::PERIOD, NodeType::Period))) return fail(saved);
-    if (!need(node, parseExpression())) return fail(saved);
+    if (!need(node, parseConstant())) return fail(saved);
 
     return node;
 }
@@ -396,7 +396,6 @@ std::shared_ptr<TreeNode> Parser::parseStatement() {
         need(node, parseWhileStatement()) ||
         need(node, parseRepeatStatement()) ||
         need(node, parseForStatement()) ||
-        need(node, parseCompoundStatement())||
         need(node, parseProcedureCall())) {
         return node;
     }
@@ -411,7 +410,7 @@ std::shared_ptr<TreeNode> Parser::parseAssignmentStatement() {
     size_t saved = save();
     auto node = std::make_shared<TreeNode>(NodeType::AssignmentStatement);
 
-    if (!need(node, terminal(TokenType::IDENT, NodeType::Ident))) return fail(saved);
+    if (!need(node, parseVariable())) return fail(saved);
     if (!need(node, terminal(TokenType::BECOMES, NodeType::Becomes))) return fail(saved);
     if (!need(node, parseExpression())) return fail(saved);
 
@@ -522,12 +521,10 @@ std::shared_ptr<TreeNode> Parser::parseProcedureCall() {
     auto node = std::make_shared<TreeNode>(NodeType::ProcedureCall);
 
     if (!need(node, terminal(TokenType::IDENT, NodeType::Ident))) return fail(saved);
-
-    if (match(TokenType::LPARENT)) {
-        if (!need(node, terminal(TokenType::LPARENT, NodeType::LParent))) return fail(saved);
-        if (!need(node, parseParameterList())) return fail(saved);
-        if (!need(node, terminal(TokenType::RPARENT, NodeType::RParent))) return fail(saved);
-    }
+    
+    if (!need(node, terminal(TokenType::LPARENT, NodeType::LParent))) return fail(saved);
+    need(node, parseParameterList());
+    if (!need(node, terminal(TokenType::RPARENT, NodeType::RParent))) return fail(saved);
 
     return node;
 }
@@ -597,41 +594,39 @@ std::shared_ptr<TreeNode> Parser::parseFactor() {
     size_t saved = save();
     auto node = std::make_shared<TreeNode>(NodeType::Factor);
     
-    // Cek untuk for procedure call
-    size_t CheckCallSaved = save();
-    auto dummyNode = std::make_shared<TreeNode>(NodeType::Ident);
+    // cek procedure/function call
+    size_t callSaved = save();
+    if (need(node, parseProcedureCall())) return node;
+    restore(callSaved);
 
-    if (need(dummyNode, terminal(TokenType::IDENT, NodeType::Ident)))
-    {
-        if (match(TokenType::LPARENT))
-        {
-            restore(CheckCallSaved);
-            if (need(node, parseProcedureCall())) return node;
-        }
-    }
-    restore(CheckCallSaved);
-
-
-    if (need(node, terminal(TokenType::IDENT, NodeType::Ident)) ||
-    need(node, terminal(TokenType::INTCON, NodeType::IntCon)) ||
-    need(node, terminal(TokenType::REALCON, NodeType::RealCon)) ||
-    need(node, terminal(TokenType::CHARCON, NodeType::CharCon)) ||
-    need(node, terminal(TokenType::STRINGCON, NodeType::String))) return node;
+    // cek variable
+    if (need(node, parseVariable())) return node;
     restore(saved);
 
-    if (need(node, terminal(TokenType::LPARENT, NodeType::LParent))) {
+    // cek const
+    if (need(node, terminal(TokenType::INTCON, NodeType::IntCon)) ||
+        need(node, terminal(TokenType::REALCON, NodeType::RealCon)) ||
+        need(node, terminal(TokenType::CHARCON, NodeType::CharCon)) ||
+        need(node, terminal(TokenType::STRINGCON, NodeType::String))) {
+        return node;
+    }
+    restore(saved);
+
+    // cek (lparent + expression + rparent)
+    if (match(TokenType::LPARENT)) {
+        if (!need(node, terminal(TokenType::LPARENT, NodeType::LParent))) return fail(saved);
         if (!need(node, parseExpression())) return fail(saved);
         if (!need(node, terminal(TokenType::RPARENT, NodeType::RParent))) return fail(saved);
         return node;
     }
     restore(saved);
 
-    if (need(node, terminal(TokenType::NOTSY, NodeType::NotSy))) {
+    // cek (notsy + factor)
+    if (match(TokenType::NOTSY)) {
+        if (!need(node, terminal(TokenType::NOTSY, NodeType::NotSy))) return fail(saved);
         if (!need(node, parseFactor())) return fail(saved);
         return node;
     }    
-    restore(saved);
-
     
     return fail(saved);
 }
@@ -675,6 +670,53 @@ std::shared_ptr<TreeNode> Parser::parseMultiplicativeOperator() {
     need(node, terminal(TokenType::ANDSY, NodeType::AndSy))) return node;
 
     return fail(saved);
+}
+
+// Revisi
+std::shared_ptr<TreeNode> Parser::parseVariable() {
+    size_t saved = save();
+    auto node = std::make_shared<TreeNode>(NodeType::Variable);
+
+    if(!need(node, terminal(TokenType::IDENT, NodeType::Ident))) return fail(saved);
+
+    while (true) {
+        if (match(TokenType::LBRACK)) {
+            auto compNode = std::make_shared<TreeNode>(NodeType::ComponentVariable);
+            if (!need(compNode, terminal(TokenType::LBRACK, NodeType::LBrack))) return fail(saved);
+            if (!need(compNode, parseIndexList())) return fail(saved);
+            if (!need(compNode, terminal(TokenType::RBRACK, NodeType::RBrack))) return fail(saved);
+            node->addChild(compNode);
+        }
+        else if (match(TokenType::PERIOD)) {
+            auto compNode = std::make_shared<TreeNode>(NodeType::ComponentVariable);
+            if (!need(compNode, terminal(TokenType::PERIOD, NodeType::Period))) return fail(saved);
+            if (!need(compNode, terminal(TokenType::IDENT, NodeType::Ident))) return fail(saved);
+            node->addChild(compNode);
+        }
+        else {
+            break;
+        }
+    }
+    return node;
+}
+
+std::shared_ptr<TreeNode> Parser::parseIndexList() {
+    size_t saved = save();
+    auto node = std::make_shared<TreeNode>(NodeType::IndexList);
+    
+    if (!(need(node, terminal(TokenType::INTCON, NodeType::IntCon)) ||
+          need(node, terminal(TokenType::CHARCON, NodeType::CharCon)) ||
+          need(node, terminal(TokenType::IDENT, NodeType::Ident)))) return fail(saved);
+
+    while (match(TokenType::COMMA)) {
+        if (!need(node, terminal(TokenType::COMMA, NodeType::Comma))) return fail(saved);
+
+        if (!(need(node, terminal(TokenType::INTCON, NodeType::IntCon)) ||
+              need(node, terminal(TokenType::CHARCON, NodeType::CharCon)) ||
+              need(node, terminal(TokenType::IDENT, NodeType::Ident)))) return fail(saved);
+    }
+
+    return node;
 }
 
 const Token& Parser::peek(int offset) const {
