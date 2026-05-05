@@ -11,6 +11,8 @@
 
 class Parser {
 public:
+    std::vector<std::string> syntaxErrors;
+
 	Parser(const std::vector<Token>& tokens);
 
 	// First ever node
@@ -59,6 +61,7 @@ public:
     // Revisi
     std::shared_ptr<TreeNode> parseVariable();                // <variable>
     std::shared_ptr<TreeNode> parseIndexList();               // <index-list>
+    std::shared_ptr<TreeNode> parseComponentVariable();       // <component-variable>
 
 	const Token& peek(int offset = 0) const;
 	const Token& advance();

@@ -43,7 +43,8 @@ std::shared_ptr<TreeNode> Parser::expect(TokenType tokenType, NodeType nodeType,
 
     Token errorToken =  (pos < tokens.size()) ? tokens[pos] : tokens.back();
     std::string errMsg = "Syntax Error at line " + std::to_string(errorToken.line) + ", column " + std::to_string(errorToken.column) + ": Expected '" + expectedStr + "', but got '" + errorToken.value + "'";
-    throw std::runtime_error(errMsg);
+    syntaxErrors.push_back(errMsg);
+    return std::make_shared<TreeNode>(nodeType, "<missing " + expectedStr + ">");
 }
 
 // this function checks wether the child exist or not
@@ -691,27 +692,8 @@ std::shared_ptr<TreeNode> Parser::parseMultiplicativeOperator() {
 std::shared_ptr<TreeNode> Parser::parseVariable() {
     size_t saved = save();
     auto node = std::make_shared<TreeNode>(NodeType::Variable);
-
     if(!need(node, terminal(TokenType::IDENT, NodeType::Ident))) return fail(saved);
-
-    while (true) {
-        if (match(TokenType::LBRACK)) {
-            auto compNode = std::make_shared<TreeNode>(NodeType::ComponentVariable);
-            if (!need(compNode, terminal(TokenType::LBRACK, NodeType::LBrack))) return fail(saved);
-            if (!need(compNode, parseIndexList())) return fail(saved);
-            need(compNode, expect(TokenType::RBRACK, NodeType::RBrack, "]"));
-            node->addChild(compNode);
-        }
-        else if (match(TokenType::PERIOD)) {
-            auto compNode = std::make_shared<TreeNode>(NodeType::ComponentVariable);
-            if (!need(compNode, terminal(TokenType::PERIOD, NodeType::Period))) return fail(saved);
-            need(compNode, expect(TokenType::IDENT, NodeType::Ident, "record field identifier"));
-            node->addChild(compNode);
-        }
-        else {
-            break;
-        }
-    }
+    while (need(node, parseComponentVariable())) {}
     return node;
 }
 
@@ -732,6 +714,25 @@ std::shared_ptr<TreeNode> Parser::parseIndexList() {
     }
 
     return node;
+}
+
+std::shared_ptr<TreeNode> Parser::parseComponentVariable() {
+    size_t saved = save();
+    auto node = std::make_shared<TreeNode>(NodeType::ComponentVariable);
+
+    if (match(TokenType::LBRACK)) {
+        if (!need(node, terminal(TokenType::LBRACK, NodeType::LBrack))) return fail(saved);
+        if (!need(node, parseIndexList())) return fail(saved);
+        need(node, expect(TokenType::RBRACK, NodeType::RBrack, "]"));
+        return node;
+    }
+    else if (match(TokenType::PERIOD)) {
+        if (!need(node, terminal(TokenType::PERIOD, NodeType::Period))) return fail(saved);
+        need(node, expect(TokenType::IDENT, NodeType::Ident, "record field identifier"));
+        return node;
+    }
+
+    return fail(saved);
 }
 
 const Token& Parser::peek(int offset) const {
