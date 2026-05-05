@@ -34,6 +34,19 @@ std::shared_ptr<TreeNode> Parser::terminal(TokenType tokenType, NodeType nodeTyp
     return std::make_shared<TreeNode>(nodeType, value);
 }
 
+std::shared_ptr<TreeNode> Parser::expect(TokenType tokenType, NodeType nodeType, std::string expectedStr) {
+    if (match(tokenType)) {
+        auto value = tokens[pos].value;
+        pos++;
+        return std::make_shared<TreeNode>(nodeType, value);
+    }
+
+    Token errorToken =  (pos < tokens.size()) ? tokens[pos] : tokens.back();
+    std::string errMsg = "Syntax Error at line " + std::to_string(errorToken.line) + ", column " + std::to_string(errorToken.column) + ": Expected '" + expectedStr + "', but got '" + errorToken.value + "'";
+    syntaxErrors.push_back(errMsg);
+    return std::make_shared<TreeNode>(nodeType, "<missing " + expectedStr + ">");
+}
+
 // this function checks wether the child exist or not
 bool Parser::need(const std::shared_ptr<TreeNode>& parent, const std::shared_ptr<TreeNode>& child) {
     if (child == nullptr) {
@@ -52,7 +65,7 @@ std::shared_ptr<TreeNode> Parser::parseProgram() {
     if (!need(node, parseProgramHeader())) return fail(saved);
     if (!need(node, parseDeclarationPart())) return fail(saved);
     if (!need(node, parseCompoundStatement())) return fail(saved);
-    if (!need(node, terminal(TokenType::PERIOD, NodeType::Period))) return fail(saved);
+    need(node, expect(TokenType::PERIOD, NodeType::Period, "."));
 
     return node;
 }
@@ -63,8 +76,8 @@ std::shared_ptr<TreeNode> Parser::parseProgramHeader() {
     auto node = std::make_shared<TreeNode>(NodeType::ProgramHeader);
 
     if (!need(node, terminal(TokenType::PROGRAMSY, NodeType::ProgramSy))) return fail(saved);
-    if (!need(node, terminal(TokenType::IDENT, NodeType::Ident))) return fail(saved);
-    if (!need(node, terminal(TokenType::SEMICOLON, NodeType::Semicolon))) return fail(saved);
+    need(node, expect(TokenType::IDENT, NodeType::Ident, "program identifier"));
+    need(node, expect(TokenType::SEMICOLON, NodeType::Semicolon, ";"));
 
     return node;
 }
@@ -91,9 +104,9 @@ std::shared_ptr<TreeNode> Parser::parseConstDeclaration() {
 
     do {
         if (!need(node, terminal(TokenType::IDENT, NodeType::Ident))) return fail(saved);
-        if (!need(node, terminal(TokenType::EQL, NodeType::Eql))) return fail(saved);
+        need(node, expect(TokenType::EQL, NodeType::Eql, "=="));
         if (!need(node, parseConstant())) return fail(saved);
-        if (!need(node, terminal(TokenType::SEMICOLON, NodeType::Semicolon))) return fail(saved);
+        need(node, expect(TokenType::SEMICOLON, NodeType::Semicolon, ";"));
     } while (match(TokenType::IDENT));
 
     return node;
@@ -131,9 +144,9 @@ std::shared_ptr<TreeNode> Parser::parseTypeDeclaration() {
 
     do {
         if(!need(node, terminal(TokenType::IDENT, NodeType::Ident))) return fail(saved);
-        if(!need(node, terminal(TokenType::EQL, NodeType::Eql))) return fail(saved);
+        need(node, expect(TokenType::EQL, NodeType::Eql, "=="));
         if(!need(node, parseType())) return fail(saved);
-        if(!need(node, terminal(TokenType::SEMICOLON, NodeType::Semicolon))) return fail(saved);
+        need(node, expect(TokenType::SEMICOLON, NodeType::Semicolon, ";"));
     } while (match(TokenType::IDENT));
 
     return node;
@@ -148,9 +161,9 @@ std::shared_ptr<TreeNode> Parser::parseVarDeclaration() {
 
     do {
         if (!need(node, parseIdentifierList())) return fail(saved);
-        if (!need(node, terminal(TokenType::COLON, NodeType::Colon))) return fail(saved);
+        need(node, expect(TokenType::COLON, NodeType::Colon, ":"));
         if (!need(node, parseType())) return fail(saved);
-        if (!need(node, terminal(TokenType::SEMICOLON, NodeType::Semicolon))) return fail(saved);
+        need(node, expect(TokenType::SEMICOLON, NodeType::Semicolon, ";"));
     } while (match(TokenType::IDENT));
 
     return node;
@@ -164,8 +177,8 @@ std::shared_ptr<TreeNode> Parser::parseIdentifierList() {
     if (!need(node, terminal(TokenType::IDENT, NodeType::Ident))) return fail(saved);
 
     while (match(TokenType::COMMA)) {
-        if (!need(node, terminal(TokenType::COMMA, NodeType::Comma))) return fail(saved);
-        if (!need(node, terminal(TokenType::IDENT, NodeType::Ident))) return fail(saved);
+        need(node, expect(TokenType::COMMA, NodeType::Comma, ","));
+        need(node, expect(TokenType::IDENT, NodeType::Ident, "identifier"));
     }
 
     return node;
@@ -196,10 +209,10 @@ std::shared_ptr<TreeNode> Parser::parseArrayType() {
     auto node = std::make_shared<TreeNode>(NodeType::ArrayType);
 
     if (!need(node, terminal(TokenType::ARRAYSY, NodeType::ArraySy))) return fail(saved);
-    if (!need(node, terminal(TokenType::LBRACK, NodeType::LBrack))) return fail(saved);
+    need(node, expect(TokenType::LBRACK, NodeType::LBrack, "["));
     if (!(need(node, parseRange()) || need(node, terminal(TokenType::IDENT, NodeType::Ident)))) return fail(saved);
-    if (!need(node, terminal(TokenType::RBRACK, NodeType::RBrack))) return fail(saved);
-    if (!need(node, terminal(TokenType::OFSY, NodeType::OfSy))) return fail(saved);
+    need(node, expect(TokenType::RBRACK, NodeType::RBrack, "]"));
+    need(node, expect(TokenType::OFSY, NodeType::OfSy, "of"));
     if (!need(node, parseType())) return fail(saved);
 
     return node;
@@ -210,10 +223,10 @@ std::shared_ptr<TreeNode> Parser::parseRange() {
     size_t saved = save();
     auto node = std::make_shared<TreeNode>(NodeType::Range);
 
-    if (!need(node, parseExpression())) return fail(saved);
+    if (!need(node, parseConstant())) return fail(saved);
     if (!need(node, terminal(TokenType::PERIOD, NodeType::Period))) return fail(saved);
-    if (!need(node, terminal(TokenType::PERIOD, NodeType::Period))) return fail(saved);
-    if (!need(node, parseExpression())) return fail(saved);
+    need(node, expect(TokenType::PERIOD, NodeType::Period, "."));
+    if (!need(node, parseConstant())) return fail(saved);
 
     return node;
 }
@@ -224,14 +237,14 @@ std::shared_ptr<TreeNode> Parser::parseEnumerated() {
     auto node = std::make_shared<TreeNode>(NodeType::Enumerated);
 
     if(!need(node, terminal(TokenType::LPARENT, NodeType::LParent))) return fail(saved);
-    if(!need(node, terminal(TokenType::IDENT, NodeType::Ident))) return fail(saved);
+    need(node, expect(TokenType::IDENT, NodeType::Ident, "enumerated identifier"));
     
     while (match(TokenType::COMMA)) {
-        if (!need(node, terminal(TokenType::COMMA, NodeType::Comma))) return fail(saved);
-        if (!need(node, terminal(TokenType::IDENT, NodeType::Ident))) return fail(saved);
+        need(node, expect(TokenType::COMMA, NodeType::Comma, ","));
+        need(node, expect(TokenType::IDENT, NodeType::Ident, "enumerated identifier"));
     }
 
-    if (!need(node, terminal(TokenType::RPARENT, NodeType::RParent))) return fail(saved);
+    need(node, expect(TokenType::RPARENT, NodeType::RParent, ")"));
 
     return node;
 }
@@ -243,7 +256,7 @@ std::shared_ptr<TreeNode> Parser::parseRecordType() {
 
     if (!need(node, terminal(TokenType::RECORDSY, NodeType::RecordSy))) return fail(saved);
     if (!need(node, parseFieldList())) return fail(saved);
-    if (!need(node, terminal(TokenType::ENDSY, NodeType::EndSy))) return fail(saved);
+    need(node, expect(TokenType::ENDSY, NodeType::EndSy, "end"));
 
     return node;
 }
@@ -256,7 +269,7 @@ std::shared_ptr<TreeNode> Parser::parseFieldList() {
     if (!need(node, parseFieldPart())) return fail(saved);
 
     while (match(TokenType::SEMICOLON)) {
-        if (!need(node, terminal(TokenType::SEMICOLON, NodeType::Semicolon))) return fail(saved);
+        need(node, expect(TokenType::SEMICOLON, NodeType::Semicolon, ";"));
         if (!need(node, parseFieldPart())) return fail(saved);
     }
     return node;
@@ -268,7 +281,7 @@ std::shared_ptr<TreeNode> Parser::parseFieldPart() {
     auto node = std::make_shared<TreeNode>(NodeType::FieldPart);
 
     if (!need(node, parseIdentifierList())) return fail(saved);
-    if (!need(node, terminal(TokenType::COLON, NodeType::Colon))) return fail(saved);
+    need(node, expect(TokenType::COLON, NodeType::Colon, ":"));
     if (!need(node, parseType())) return fail(saved);
 
     return node;
@@ -292,11 +305,11 @@ std::shared_ptr<TreeNode> Parser::parseProcedureDeclaration() {
     auto node = std::make_shared<TreeNode>(NodeType::ProcedureDeclaration);
 
     if (!need(node, terminal(TokenType::PROCEDURESY, NodeType::ProcedureSy))) return fail(saved);
-    if (!need(node, terminal(TokenType::IDENT, NodeType::Ident))) return fail(saved);
+    need(node, expect(TokenType::IDENT, NodeType::Ident, "procedure name"));
     need(node, parseFormalParameterList());
-    if (!need(node, terminal(TokenType::SEMICOLON, NodeType::Semicolon))) return fail(saved);
+    need(node, expect(TokenType::SEMICOLON, NodeType::Semicolon, ";"));
     if (!need(node, parseBlock())) return fail(saved);
-    if (!need(node, terminal(TokenType::SEMICOLON, NodeType::Semicolon))) return fail(saved);
+    need(node, expect(TokenType::SEMICOLON, NodeType::Semicolon, ";"));
 
     return node;
 }
@@ -307,13 +320,13 @@ std::shared_ptr<TreeNode> Parser::parseFunctionDeclaration() {
     auto node = std::make_shared<TreeNode>(NodeType::FunctionDeclaration);
 
     if (!need(node, terminal(TokenType::FUNCTIONSY, NodeType::FunctionSy))) return fail(saved);
-    if (!need(node, terminal(TokenType::IDENT, NodeType::Ident))) return fail(saved);
+    need(node, expect(TokenType::IDENT, NodeType::Ident, "function name"));
     need(node, parseFormalParameterList());
-    if (!need(node, terminal(TokenType::COLON, NodeType::Colon))) return fail(saved);
-    if (!need(node, terminal(TokenType::IDENT, NodeType::Ident))) return fail(saved);
-    if (!need(node, terminal(TokenType::SEMICOLON, NodeType::Semicolon))) return fail(saved);
+    need(node, expect(TokenType::COLON, NodeType::Colon, ":"));
+    need(node, expect(TokenType::IDENT, NodeType::Ident, "return type"));
+    need(node, expect(TokenType::SEMICOLON, NodeType::Semicolon, ";"));
     if (!need(node, parseBlock())) return fail(saved);
-    if (!need(node, terminal(TokenType::SEMICOLON, NodeType::Semicolon))) return fail(saved);
+    need(node, expect(TokenType::SEMICOLON, NodeType::Semicolon, ";"));
 
     return node;
 }
@@ -342,7 +355,7 @@ std::shared_ptr<TreeNode> Parser::parseFormalParameterList() {
         if (!need(node, parseParameterGroup())) return fail(saved);
     }
 
-    if (!need(node, terminal(TokenType::RPARENT, NodeType::RParent))) return fail(saved);
+    need(node, expect(TokenType::RPARENT, NodeType::RParent, ")"));
 
     return node;
 }
@@ -366,7 +379,7 @@ std::shared_ptr<TreeNode> Parser::parseCompoundStatement() {
 
     if(!need(node, terminal(TokenType::BEGINSY, NodeType::BeginSy))) return fail(saved);
     if(!need(node, parseStatementList())) return fail(saved);
-    if(!need(node, terminal(TokenType::ENDSY, NodeType::EndSy))) return fail(saved);
+    need(node, expect(TokenType::ENDSY, NodeType::EndSy, "end"));
 
     return node;
 }
@@ -396,7 +409,6 @@ std::shared_ptr<TreeNode> Parser::parseStatement() {
         need(node, parseWhileStatement()) ||
         need(node, parseRepeatStatement()) ||
         need(node, parseForStatement()) ||
-        need(node, parseCompoundStatement())||
         need(node, parseProcedureCall())) {
         return node;
     }
@@ -411,9 +423,11 @@ std::shared_ptr<TreeNode> Parser::parseAssignmentStatement() {
     size_t saved = save();
     auto node = std::make_shared<TreeNode>(NodeType::AssignmentStatement);
 
-    if (!need(node, terminal(TokenType::IDENT, NodeType::Ident))) return fail(saved);
+    if (!need(node, parseVariable())) return fail(saved);
     if (!need(node, terminal(TokenType::BECOMES, NodeType::Becomes))) return fail(saved);
-    if (!need(node, parseExpression())) return fail(saved);
+    if (!need(node, parseExpression())) {
+         throw std::runtime_error("Syntax Error: Expected an expression after ':='");
+    }
 
     return node;
 }
@@ -425,7 +439,7 @@ std::shared_ptr<TreeNode> Parser::parseIfStatement() {
 
     if (!need(node, terminal(TokenType::IFSY, NodeType::IfSy))) return fail(saved);
     if (!need(node, parseExpression())) return fail(saved);
-    if (!need(node, terminal(TokenType::THENSY, NodeType::ThenSy))) return fail(saved);
+    need(node, expect(TokenType::THENSY, NodeType::ThenSy, "then"));
     if (!need(node, parseStatement())) return fail(saved);
 
     if (match(TokenType::ELSESY)) {
@@ -443,9 +457,9 @@ std::shared_ptr<TreeNode> Parser::parseCaseStatement() {
 
     if (!need(node, terminal(TokenType::CASESY, NodeType::CaseSy))) return fail(saved);
     if (!need(node, parseExpression())) return fail(saved);
-    if (!need(node, terminal(TokenType::OFSY, NodeType::OfSy))) return fail(saved);
+    need(node, expect(TokenType::OFSY, NodeType::OfSy, "of"));
     if (!need(node, parseCaseBlock())) return fail(saved);
-    if (!need(node, terminal(TokenType::ENDSY, NodeType::EndSy))) return fail(saved);
+    need(node, expect(TokenType::ENDSY, NodeType::EndSy, "end"));
 
     return node;
 }
@@ -462,7 +476,7 @@ std::shared_ptr<TreeNode> Parser::parseCaseBlock() {
         if (!need(node, parseConstant())) return fail(saved);
     }
 
-    if (!need(node, terminal(TokenType::COLON, NodeType::Colon))) return fail(saved);
+    need(node, expect(TokenType::COLON, NodeType::Colon, ":"));
     if (!need(node, parseStatement())) return fail(saved);
     
     while (match(TokenType::SEMICOLON)) {
@@ -480,7 +494,7 @@ std::shared_ptr<TreeNode> Parser::parseWhileStatement() {
 
     if (!need(node, terminal(TokenType::WHILESY, NodeType::WhileSy))) return fail(saved);
     if (!need(node, parseExpression())) return fail(saved);
-    if (!need(node, terminal(TokenType::DOSY, NodeType::DoSy))) return fail(saved);
+    need(node, expect(TokenType::DOSY, NodeType::DoSy, "do"));
     if (!need(node, parseStatement())) return fail(saved);
 
     return node;
@@ -493,7 +507,7 @@ std::shared_ptr<TreeNode> Parser::parseRepeatStatement() {
 
     if (!need(node, terminal(TokenType::REPEATSY, NodeType::RepeatSy))) return fail(saved);
     if (!need(node, parseStatementList())) return fail(saved);
-    if (!need(node, terminal(TokenType::UNTILSY, NodeType::UntilSy))) return fail(saved);
+    need(node, expect(TokenType::UNTILSY, NodeType::UntilSy, "until"));
     if (!need(node, parseExpression())) return fail(saved);
 
     return node;
@@ -505,12 +519,14 @@ std::shared_ptr<TreeNode> Parser::parseForStatement() {
     auto node = std::make_shared<TreeNode>(NodeType::ForStatement);
 
     if (!need(node, terminal(TokenType::FORSY, NodeType::ForSy))) return fail(saved);
-    if (!need(node, terminal(TokenType::IDENT, NodeType::Ident))) return fail(saved);
-    if (!need(node, terminal(TokenType::BECOMES, NodeType::Becomes))) return fail(saved);
+    need(node, expect(TokenType::IDENT, NodeType::Ident, "iterator variable"));
+    need(node, expect(TokenType::BECOMES, NodeType::Becomes, ":="));
     if (!need(node, parseExpression())) return fail(saved);
-    if (!(need(node, terminal(TokenType::TOSY, NodeType::ToSy)) || need(node, terminal(TokenType::DOWNTOSY, NodeType::DownToSy)))) return fail(saved);
+    if (!(need(node, terminal(TokenType::TOSY, NodeType::ToSy)) || need(node, terminal(TokenType::DOWNTOSY, NodeType::DownToSy)))) {
+        throw std::runtime_error("Syntax Error: Expected 'to' or 'downto' in for loop.");
+    }
     if (!need(node, parseExpression())) return fail(saved);
-    if (!need(node, terminal(TokenType::DOSY, NodeType::DoSy))) return fail(saved);
+    need(node, expect(TokenType::DOSY, NodeType::DoSy, "do"));
     if (!need(node, parseStatement())) return fail(saved);
 
     return node;
@@ -522,12 +538,9 @@ std::shared_ptr<TreeNode> Parser::parseProcedureCall() {
     auto node = std::make_shared<TreeNode>(NodeType::ProcedureCall);
 
     if (!need(node, terminal(TokenType::IDENT, NodeType::Ident))) return fail(saved);
-
-    if (match(TokenType::LPARENT)) {
-        if (!need(node, terminal(TokenType::LPARENT, NodeType::LParent))) return fail(saved);
-        if (!need(node, parseParameterList())) return fail(saved);
-        if (!need(node, terminal(TokenType::RPARENT, NodeType::RParent))) return fail(saved);
-    }
+    if (!need(node, terminal(TokenType::LPARENT, NodeType::LParent))) return fail(saved);
+    need(node, parseParameterList());
+    need(node, expect(TokenType::RPARENT, NodeType::RParent, ")"));
 
     return node;
 }
@@ -597,41 +610,39 @@ std::shared_ptr<TreeNode> Parser::parseFactor() {
     size_t saved = save();
     auto node = std::make_shared<TreeNode>(NodeType::Factor);
     
-    // Cek untuk for procedure call
-    size_t CheckCallSaved = save();
-    auto dummyNode = std::make_shared<TreeNode>(NodeType::Ident);
+    // cek procedure/function call
+    size_t callSaved = save();
+    if (need(node, parseProcedureCall())) return node;
+    restore(callSaved);
 
-    if (need(dummyNode, terminal(TokenType::IDENT, NodeType::Ident)))
-    {
-        if (match(TokenType::LPARENT))
-        {
-            restore(CheckCallSaved);
-            if (need(node, parseProcedureCall())) return node;
-        }
-    }
-    restore(CheckCallSaved);
-
-
-    if (need(node, terminal(TokenType::IDENT, NodeType::Ident)) ||
-    need(node, terminal(TokenType::INTCON, NodeType::IntCon)) ||
-    need(node, terminal(TokenType::REALCON, NodeType::RealCon)) ||
-    need(node, terminal(TokenType::CHARCON, NodeType::CharCon)) ||
-    need(node, terminal(TokenType::STRINGCON, NodeType::String))) return node;
+    // cek variable
+    if (need(node, parseVariable())) return node;
     restore(saved);
 
-    if (need(node, terminal(TokenType::LPARENT, NodeType::LParent))) {
-        if (!need(node, parseExpression())) return fail(saved);
-        if (!need(node, terminal(TokenType::RPARENT, NodeType::RParent))) return fail(saved);
+    // cek const
+    if (need(node, terminal(TokenType::INTCON, NodeType::IntCon)) ||
+        need(node, terminal(TokenType::REALCON, NodeType::RealCon)) ||
+        need(node, terminal(TokenType::CHARCON, NodeType::CharCon)) ||
+        need(node, terminal(TokenType::STRINGCON, NodeType::String))) {
         return node;
     }
     restore(saved);
 
-    if (need(node, terminal(TokenType::NOTSY, NodeType::NotSy))) {
+    // cek (lparent + expression + rparent)
+    if (match(TokenType::LPARENT)) {
+        if (!need(node, terminal(TokenType::LPARENT, NodeType::LParent))) return fail(saved);
+        if (!need(node, parseExpression())) return fail(saved);
+        need(node, expect(TokenType::RPARENT, NodeType::RParent, ")"));
+        return node;
+    }
+    restore(saved);
+
+    // cek (notsy + factor)
+    if (match(TokenType::NOTSY)) {
+        if (!need(node, terminal(TokenType::NOTSY, NodeType::NotSy))) return fail(saved);
         if (!need(node, parseFactor())) return fail(saved);
         return node;
     }    
-    restore(saved);
-
     
     return fail(saved);
 }
@@ -677,6 +688,53 @@ std::shared_ptr<TreeNode> Parser::parseMultiplicativeOperator() {
     return fail(saved);
 }
 
+// Revisi
+std::shared_ptr<TreeNode> Parser::parseVariable() {
+    size_t saved = save();
+    auto node = std::make_shared<TreeNode>(NodeType::Variable);
+    if(!need(node, terminal(TokenType::IDENT, NodeType::Ident))) return fail(saved);
+    while (need(node, parseComponentVariable())) {}
+    return node;
+}
+
+std::shared_ptr<TreeNode> Parser::parseIndexList() {
+    size_t saved = save();
+    auto node = std::make_shared<TreeNode>(NodeType::IndexList);
+    
+    if (!(need(node, terminal(TokenType::INTCON, NodeType::IntCon)) ||
+          need(node, terminal(TokenType::CHARCON, NodeType::CharCon)) ||
+          need(node, terminal(TokenType::IDENT, NodeType::Ident)))) return fail(saved);
+
+    while (match(TokenType::COMMA)) {
+        need(node, expect(TokenType::COMMA, NodeType::Comma, ","));
+
+        if (!(need(node, terminal(TokenType::INTCON, NodeType::IntCon)) ||
+              need(node, terminal(TokenType::CHARCON, NodeType::CharCon)) ||
+              need(node, terminal(TokenType::IDENT, NodeType::Ident)))) return fail(saved);
+    }
+
+    return node;
+}
+
+std::shared_ptr<TreeNode> Parser::parseComponentVariable() {
+    size_t saved = save();
+    auto node = std::make_shared<TreeNode>(NodeType::ComponentVariable);
+
+    if (match(TokenType::LBRACK)) {
+        if (!need(node, terminal(TokenType::LBRACK, NodeType::LBrack))) return fail(saved);
+        if (!need(node, parseIndexList())) return fail(saved);
+        need(node, expect(TokenType::RBRACK, NodeType::RBrack, "]"));
+        return node;
+    }
+    else if (match(TokenType::PERIOD)) {
+        if (!need(node, terminal(TokenType::PERIOD, NodeType::Period))) return fail(saved);
+        need(node, expect(TokenType::IDENT, NodeType::Ident, "record field identifier"));
+        return node;
+    }
+
+    return fail(saved);
+}
+
 const Token& Parser::peek(int offset) const {
 	return tokens[pos + offset];
 }
@@ -701,26 +759,26 @@ std::string Parser::printNode(const std::shared_ptr<TreeNode> &node){
 void Parser::printParseTree(const std::shared_ptr<TreeNode> &node, const std::string &prefix = "", bool last = true, bool root = true){
     if (node == nullptr)
     {
-            return;
-        }
-
-        if (root)
-        {
-            std::cout << printNode(node) << '\n';
-        }
-        else
-        {
-            std::cout << prefix << (last ? "└── " : "├── ") << printNode(node) << '\n';
-        }
-
-        std::string childPrefix = prefix;
-        if (!root)
-        {
-            childPrefix += last ? "    " : "│   ";
-        }
-
-        for (size_t i = 0; i < node->children.size(); ++i)
-        {
-            printParseTree(node->children[i], childPrefix, i + 1 == node->children.size(), false);
-        }
+        return;
     }
+
+    if (root)
+    {
+        std::cout << printNode(node) << '\n';
+    }
+    else
+    {
+        std::cout << prefix << (last ? "└── " : "├── ") << printNode(node) << '\n';
+    }
+
+    std::string childPrefix = prefix;
+    if (!root)
+    {
+        childPrefix += last ? "    " : "│   ";
+    }
+
+    for (size_t i = 0; i < node->children.size(); ++i)
+    {
+        printParseTree(node->children[i], childPrefix, i + 1 == node->children.size(), false);
+    }
+}

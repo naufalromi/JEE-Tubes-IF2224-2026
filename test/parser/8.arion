@@ -1,0 +1,55 @@
+program Test3;
+
+type
+  Titik == record
+    x, y: Integer
+  end;
+  Peta == array [1..100] of Integer;
+
+var
+  posisi: Titik;
+  grid: Peta;
+  i, skor: Integer;
+  arah: Char;
+
+{ Menguji <parameter-group> }
+procedure HitungMundur(startVal, stepVal: Integer; c: Char);
+begin
+  skor := startVal - stepVal;
+end;
+
+{ Menguji <compound-statement> utama program }
+begin
+  { Menguji <assignment-statement>, <variable>, <component-variable> (titik/record) }
+  posisi.x := 10;
+  posisi.y := 20;
+
+  { Menguji <component-variable> (kurung siku/array) & <index-list> (dengan koma) }
+  grid[1, 2] := 99;
+  grid['a'] := 50;
+
+  { Menguji <if-statement> dan <statement-list> }
+  if (posisi.x > 5) then
+    skor := 1
+  else
+    skor := 0;
+
+  { Menguji <case-statement> dan <case-block> multi-konstanta }
+  case skor of
+    0: arah := 'U';
+    1, 2: arah := 'S';
+    3: arah := 'T';
+  end;
+
+  { Menguji <while-statement> }
+  i := 0;
+  while i < 10 do
+    i := i + 1;
+
+  { Menguji <repeat-statement> }
+  repeat
+    posisi.x := posisi.x - 1;
+    HitungMundur(posisi.x, 1, 'X')
+  until posisi.x == 0
+
+end.

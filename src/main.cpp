@@ -37,7 +37,11 @@ int main()
         std::cout << "Choose Testcase: ";
         std::cin >> filenum;
 
-        inputPath = "test/lexer/" + std::to_string(filenum) + ".arion";
+        if (typeChoice == 2) {
+            inputPath = "test/parser/" + std::to_string(filenum) + ".arion";
+        } else {
+            inputPath = "test/lexer/" + std::to_string(filenum) + ".arion";
+        }
 
         // std::string sourceCode = "program Hallo\n";
         try
@@ -63,13 +67,20 @@ int main()
                 Parser parser(tokens);
                 std::shared_ptr<TreeNode> parseTree = parser.parseProgram();
 
-                // if (parseTree == nullptr || !parser.match(TokenType::END_OF_FILE))
-                // {
-                //     std::cerr << "Parse failed.\n";
-                //     return 1;
-                // }
+                if (!parser.syntaxErrors.empty()) {
+                    for (const auto& err : parser.syntaxErrors) {
+                        std::cerr << "- " << err << "\n";
+                    }
+                    return 1;
+                }
 
-                std::cout << "Parse tree:\n";
+                if (parseTree == nullptr)
+                {
+                    std::cerr << "Parse failed.\n";
+                    return 1;
+                }
+
+                std::cout << "Parse tree berhasil dibuat:\n";
                 Parser::printParseTree(parseTree,"",true,true);
 
                 return 0;

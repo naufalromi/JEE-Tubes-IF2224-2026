@@ -44,6 +44,10 @@ enum class NodeType {
     AdditiveOperator,           // nope <AdditiveOperator> -> + | - | or
     MultiplicativeOperator,     // nope <MultiplicativeOperator> -> * | / | div | mod | and
     
+    Variable,
+    ComponentVariable,
+    IndexList,
+
     // Terminals
     Ident,
     ConstSy,
@@ -143,6 +147,9 @@ inline const char* nodeTypeToString(NodeType type) {
         case NodeType::RelationalOperator: return "<relational-operator>";
         case NodeType::AdditiveOperator: return "<additive-operator>";
         case NodeType::MultiplicativeOperator: return "<multiplicative-operator>";
+        case NodeType::Variable: return "<variable>";
+        case NodeType::ComponentVariable: return "<component-variable>";
+        case NodeType::IndexList: return "<index-list>";
         // Terminals
         case NodeType::Ident: return "ident";
         case NodeType::ConstSy: return "constsy";

@@ -1,0 +1,12 @@
+program TestString;
+var
+    c: Char;
+    s: String;
+begin
+    c := 'x';
+    s := 'Halo Dunia';
+    c := '''''';
+    s := 'Hari Jum''at';
+    s := '';
+    s := 'Lupa tutup kutip
+end.

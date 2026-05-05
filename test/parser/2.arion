@@ -8,6 +8,6 @@ begin
     writeln('Hello, world');
     writeln('Arithmetic and calls');
     writeln(x);
-    writeln(y);
-    writeln(z)
+    writeln y;
+    writeln(z
 end.

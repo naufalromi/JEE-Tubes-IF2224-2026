@@ -11,6 +11,8 @@
 
 class Parser {
 public:
+    std::vector<std::string> syntaxErrors;
+
 	Parser(const std::vector<Token>& tokens);
 
 	// First ever node
@@ -56,11 +58,15 @@ public:
     std::shared_ptr<TreeNode> parseRelationalOperator();     // <relational-operator>
     std::shared_ptr<TreeNode> parseAdditiveOperator();       // <additive-operator>
     std::shared_ptr<TreeNode> parseMultiplicativeOperator(); // <multiplicative-operator>
+    // Revisi
+    std::shared_ptr<TreeNode> parseVariable();                // <variable>
+    std::shared_ptr<TreeNode> parseIndexList();               // <index-list>
+    std::shared_ptr<TreeNode> parseComponentVariable();       // <component-variable>
 
 	const Token& peek(int offset = 0) const;
 	const Token& advance();
     bool match(TokenType type) const;
-    std::shared_ptr<TreeNode> expect(TokenType, NodeType);
+    std::shared_ptr<TreeNode> expect(TokenType tokenType, NodeType nodeType, std::string expectedStr);
 
     size_t save() const;
     void restore(size_t saved);
