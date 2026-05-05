@@ -1,0 +1,23 @@
+program Test1;
+
+const
+  MaxVal == 100;
+  MinVal == -10;
+  Grade == 'A';
+  Welcome == 'Hello Arion';
+
+type
+  IdxRange == 1..100;
+  Days == (Mon, Tue, Wed, Thu, Fri);
+  ScoreArray == array [1..100] of Integer;
+
+var
+  x, y, z: Integer;
+  myScore: ScoreArray;
+  tempArr: array [Mon..Fri] of Integer;
+
+begin
+  x := MaxVal;
+  y := MinVal;
+  z := x + y;
+end.

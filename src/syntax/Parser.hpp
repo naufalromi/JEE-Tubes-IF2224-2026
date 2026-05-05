@@ -63,7 +63,7 @@ public:
 	const Token& peek(int offset = 0) const;
 	const Token& advance();
     bool match(TokenType type) const;
-    std::shared_ptr<TreeNode> expect(TokenType, NodeType);
+    std::shared_ptr<TreeNode> expect(TokenType tokenType, NodeType nodeType, std::string expectedStr);
 
     size_t save() const;
     void restore(size_t saved);

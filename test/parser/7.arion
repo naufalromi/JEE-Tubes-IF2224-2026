@@ -1,0 +1,43 @@
+program Test2;
+
+type
+  { Menguji <enumerated> }
+  Bulan == (Jan, Feb, Mar, Apr);
+  
+  { Menguji <range> }
+  Tanggal == 1..31;
+  
+  { Menguji <record-type>, <field-list>, dan <field-part> }
+  Siswa == record
+    id, umur: Integer;
+    kelas: Char
+  end;
+
+var
+  s: Siswa;
+
+{ Menguji <subprogram-declaration>, <procedure-declaration>, dan <formal-parameter-list> }
+procedure CetakSiswa(pId, pUmur: Integer; pKelas: Char);
+var
+  { Menguji <block> (declaration-part di dalam subprogram) }
+  tempId: Integer;
+begin
+  { Menguji <block> (compound-statement di dalam subprogram) }
+  tempId := pId;
+end;
+
+{ Menguji <subprogram-declaration>, <function-declaration> }
+function CekLulus(nilai: Char): Integer;
+const
+  Batas == 'C';
+begin
+  CekLulus := 1;
+end;
+
+begin
+  s.id := 101;
+  s.umur := 16;
+  s.kelas := 'A';
+  
+  CetakSiswa(s.id, s.umur, s.kelas);
+end.
