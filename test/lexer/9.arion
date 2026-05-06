@@ -8,4 +8,7 @@ begin
     2: day := 3;
   end;
   a := a * -1;
+  {halo}
+  {saya}
+  {dunia}
 end.

@@ -1,38 +1,40 @@
 programsy
-ident (TestString)
+ident (TestCase)
 semicolon
 varsy
-ident (c)
+ident (day)
 colon
-ident (Char)
-semicolon
-ident (s)
-colon
-ident (String)
+ident (Integer)
 semicolon
 beginsy
-ident (c)
+ident (day)
 becomes
-charcon (x)
+intcon (1)
 semicolon
-ident (s)
+casesy
+ident (day)
+ofsy
+intcon (1)
+colon
+ident (day)
 becomes
-string ('Halo Dunia')
+intcon (2)
 semicolon
-ident (c)
+intcon (2)
+colon
+ident (day)
 becomes
-string ('''')
+intcon (3)
 semicolon
-ident (s)
-becomes
-string ('Hari Jum'at')
+endsy
 semicolon
-ident (s)
+ident (a)
 becomes
-string ('')
+ident (a)
+times
+minus
+intcon (1)
 semicolon
-ident (s)
-becomes
 endsy
 period
 endoffile
