@@ -609,15 +609,13 @@ std::shared_ptr<TreeNode> Parser::parseTerm() {
 std::shared_ptr<TreeNode> Parser::parseFactor() {
     size_t saved = save();
     auto node = std::make_shared<TreeNode>(NodeType::Factor);
-    
-    // cek procedure/function call
-    size_t callSaved = save();
-    if (need(node, parseProcedureCall())) return node;
-    restore(callSaved);
 
-    // cek variable
-    if (need(node, parseVariable())) return node;
-    restore(saved);
+    // cek ada minus di depan
+    if (match(TokenType::MINUS)) {
+        need(node, terminal(TokenType::MINUS, NodeType::Minus));
+        if (!need(node, parseFactor())) return fail(saved);
+        return node;
+    }
 
     // cek const
     if (need(node, terminal(TokenType::INTCON, NodeType::IntCon)) ||
@@ -626,7 +624,6 @@ std::shared_ptr<TreeNode> Parser::parseFactor() {
         need(node, terminal(TokenType::STRINGCON, NodeType::String))) {
         return node;
     }
-    restore(saved);
 
     // cek (lparent + expression + rparent)
     if (match(TokenType::LPARENT)) {
@@ -642,7 +639,16 @@ std::shared_ptr<TreeNode> Parser::parseFactor() {
         if (!need(node, terminal(TokenType::NOTSY, NodeType::NotSy))) return fail(saved);
         if (!need(node, parseFactor())) return fail(saved);
         return node;
-    }    
+    }
+    restore(saved);
+
+    // cek procedure/function call
+    if (need(node, parseProcedureCall())) return node;
+    restore(saved);
+
+    // cek variable
+    if (need(node, parseVariable())) return node;
+    restore(saved);
     
     return fail(saved);
 }
