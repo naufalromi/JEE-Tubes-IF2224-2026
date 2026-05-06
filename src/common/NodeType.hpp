@@ -47,6 +47,7 @@ enum class NodeType {
     Variable,
     ComponentVariable,
     IndexList,
+    Error,
 
     // Terminals
     Ident,

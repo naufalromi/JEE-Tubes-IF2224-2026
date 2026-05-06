@@ -44,3 +44,10 @@ enum class ErrorType {
 std::string errorTypeToMessage(ErrorType type, const std::string &detail = "");
 
 // Continue for Class SyntaxError and SemanticError here inherit from CompilerError
+
+class SyntaxError : public CompilerError{
+    public:
+    SyntaxError(const std::string &msg, int l, int c)
+        : CompilerError(msg, l, c, "Syntax Error") {};
+    ~SyntaxError();
+};

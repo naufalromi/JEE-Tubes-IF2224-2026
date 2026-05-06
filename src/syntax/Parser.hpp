@@ -81,5 +81,8 @@ public:
 
 	const std::vector<Token>& tokens;
 	size_t pos;
+
+    /* Untuk Melakukan error Handling */
+    void synchronize();
 };
 

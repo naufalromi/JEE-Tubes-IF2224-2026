@@ -7,4 +7,5 @@ begin
     1: day := 2;
     2: day := 3;
   end;
+  a := a * 1 - a;
 end.
