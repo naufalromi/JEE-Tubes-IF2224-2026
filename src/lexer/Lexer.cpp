@@ -129,6 +129,7 @@ std::vector<Token> LexicalAnalyzer::tokenizeAll()
         // Skipping Comments
         if (currentToken.type == TokenType::COMMENT){
             currentToken = getNextToken();
+            continue;
         }
         currentToken.type == TokenType::ERROR_TOKEN ? errorTokens.push_back(currentToken) : tokens.push_back(currentToken);
             /* code */

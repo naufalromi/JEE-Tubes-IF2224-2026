@@ -102,7 +102,7 @@ bool Parser::need(const std::shared_ptr<TreeNode> &parent, const std::shared_ptr
     return true;
 }
 
-// 1
+// 1 PROGRAM → PROGRAM-HEADER + DECLARATION-PART + COMPOUND-STATEMENT + period
 std::shared_ptr<TreeNode> Parser::parseProgram()
 {
     auto node = std::make_shared<TreeNode>(NodeType::Program);
@@ -122,7 +122,7 @@ std::shared_ptr<TreeNode> Parser::parseProgram()
     return node;
 }
 
-// 2
+// 2 PROGRAM-HEADER → programsy + ident + semicolon 
 std::shared_ptr<TreeNode> Parser::parseProgramHeader()
 {
     auto node = std::make_shared<TreeNode>(NodeType::ProgramHeader);
@@ -139,7 +139,7 @@ std::shared_ptr<TreeNode> Parser::parseProgramHeader()
     return node;
 }
 
-// 3
+// 3 DECLARATION-PART → (CONST-DECLARATION)* + (TYPE-DECLARATION)* + (VAR-DECLARATION)* + (SUBPROGRAM-DECLARATION)*
 std::shared_ptr<TreeNode> Parser::parseDeclarationPart()
 {
     auto node = std::make_shared<TreeNode>(NodeType::DeclarationPart);
@@ -425,7 +425,8 @@ std::shared_ptr<TreeNode> Parser::parseRange()
         need(node, const2);
     }
     else {
-        syntaxErrors.push_back("Diharapkan Konstanta (batas) di baris " + std::to_string(peek().line));
+        SyntaxError err("Diharapkan Konstanta (batas) di baris ",peek().line,peek().column);
+        syntaxErrors.push_back(err.what());
         node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Constant>", true));
         synchronize();
     }
@@ -478,7 +479,8 @@ std::shared_ptr<TreeNode> Parser::parseRecordType()
     if (fieldList){
         need(node, fieldList);
     }else{
-        syntaxErrors.push_back("Diharapkan daftar field di baris " + std::to_string(peek().line));
+        SyntaxError err("Diharapkan daftar field", peek().line, peek().column);
+        syntaxErrors.push_back(err.what());
         node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Field-List>", true));
         synchronize();
     }
@@ -511,7 +513,8 @@ std::shared_ptr<TreeNode> Parser::parseFieldList()
         if (nextField){
             need(node, nextField);
         }else{
-            syntaxErrors.push_back("Diharapkan field-part setelah ';' di baris " + std::to_string(peek().line));
+            SyntaxError err("Diharapkan field-part setelah ';'", peek().line, peek().column);
+            syntaxErrors.push_back(err.what());
             node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Field-Part>", true));
             synchronize();
         }
@@ -527,7 +530,8 @@ std::shared_ptr<TreeNode> Parser::parseFieldPart()
     if (idenList){
         need(node, idenList);
     }else{
-        syntaxErrors.push_back("Diharapkan daftar Identifier di baris " + std::to_string(peek().line));
+        SyntaxError err("Diharapkan daftar Identifier", peek().line, peek().column);
+        syntaxErrors.push_back(err.what());
         node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing IdentifierList>", true));
         synchronize();
     }
@@ -543,7 +547,8 @@ std::shared_ptr<TreeNode> Parser::parseFieldPart()
     {
         need(node, type);
     }else{
-        syntaxErrors.push_back("Diharapkan Type Data di baris " + std::to_string(peek().line));
+        SyntaxError err("Diharapkan Type Data", peek().line, peek().column);
+        syntaxErrors.push_back(err.what());
         node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Type>", true));
         synchronize();
     }
@@ -554,16 +559,13 @@ std::shared_ptr<TreeNode> Parser::parseFieldPart()
 
 std::shared_ptr<TreeNode> Parser::parseSubprogramDeclaration()
 {
-    auto node = std::make_shared<TreeNode>(NodeType::SubprogramDeclaration);
-
-    if (peek().type == TokenType::PROCEDURESY){
-        need(node, parseProcedureDeclaration());
-    }else if (peek().type == TokenType::FUNCTIONSY){
-        need(node, parseFunctionDeclaration());
-    }else{
-        return nullptr;
+    if (peek().type == TokenType::PROCEDURESY) {
+        return parseProcedureDeclaration(); 
+    } else if (peek().type == TokenType::FUNCTIONSY) {
+        return parseFunctionDeclaration();  
     }
-    return node;
+    
+    return nullptr;
 }
 
 // 17 PROCEDURE-DECLARATION -> proceduresy + ident + (FORMAL-PARAMETER-LIST)? + semicolon + BLOCK + semicolon
@@ -584,7 +586,14 @@ std::shared_ptr<TreeNode> Parser::parseProcedureDeclaration()
     if (semi1->isError) synchronize();
 
     auto blockNode = parseBlock();
-    if (blockNode) need(node, blockNode);
+    if (blockNode) {
+        need(node, blockNode);
+    } else {
+        SyntaxError err("Diharapkan blok kode (begin...end) pada procedure", peek().line, peek().column);
+        syntaxErrors.push_back(err.what());
+        node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Block>", true));
+        synchronize();
+    }
     
     auto semi2 = expect(TokenType::SEMICOLON, NodeType::Semicolon, "';' di akhir procedure");
     need(node, semi2);
@@ -640,11 +649,14 @@ std::shared_ptr<TreeNode> Parser::parseBlock()
 
     auto compStmt = parseCompoundStatement();
     if (compStmt) {
-        need(node, compStmt); 
+        need(node, compStmt);
     } else {
-        syntaxErrors.push_back("Diharapkan blok 'begin ... end' (Compound Statement) di baris " + std::to_string(peek().line));
+        SyntaxError err("Diharapkan blok 'begin ... end' (Compound Statement)", peek().line, peek().column);
+        syntaxErrors.push_back(err.what());
         node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Compound-Statement>", true));
-        synchronize();
+        if (peek().type != TokenType::SEMICOLON) {
+            synchronize(); 
+        }
     }
 
     return node;
@@ -666,7 +678,8 @@ std::shared_ptr<TreeNode> Parser::parseFormalParameterList()
     if (paramGroup) {
         need(node, paramGroup);
     } else {
-        syntaxErrors.push_back("Diharapkan definisi parameter di baris " + std::to_string(peek().line));
+        SyntaxError err("Diharapkan definisi parameter", peek().line, peek().column);
+        syntaxErrors.push_back(err.what());
         node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing ParameterGroup>", true));
         synchronize();
     }
@@ -678,7 +691,8 @@ std::shared_ptr<TreeNode> Parser::parseFormalParameterList()
         if (nextParamGroup) {
             need(node, nextParamGroup);
         } else {
-            syntaxErrors.push_back("Diharapkan parameter setelah ';' di baris " + std::to_string(peek().line));
+            SyntaxError err("Diharapkan parameter setelah ';'", peek().line, peek().column);
+            syntaxErrors.push_back(err.what());
             node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing ParameterGroup>", true));
             synchronize();
         }
@@ -716,7 +730,8 @@ std::shared_ptr<TreeNode> Parser::parseCompoundStatement()
     if (stmtList) {
         need(node, stmtList);
     } else {
-        syntaxErrors.push_back("Diharapkan statement di dalam blok 'begin' di baris " + std::to_string(peek().line));
+        SyntaxError err("Diharapkan statement di dalam blok 'begin'", peek().line, peek().column);
+        syntaxErrors.push_back(err.what());
         node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Statement-List>", true));
         synchronize();
     }
@@ -746,7 +761,8 @@ std::shared_ptr<TreeNode> Parser::parseStatementList()
         if (nextStatement) {
             need(node, nextStatement);
         } else {
-            syntaxErrors.push_back("Diharapkan statement setelah ';' di baris " + std::to_string(peek().line));
+            SyntaxError err("Diharapkan statement setelah ';'", peek().line, peek().column);
+            syntaxErrors.push_back(err.what());
             node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Statement>", true));
             synchronize();
         }
@@ -757,22 +773,36 @@ std::shared_ptr<TreeNode> Parser::parseStatementList()
 // 24 STATEMENT -> (ASSIGNMENT-STATEMENT | IF-STATEMENT | CASE-STATEMENT | WHILE-STATEMENT | REPEAT-STATEMENT | FOR-STATEMENT )? | PROCEDURE/FUNCTION-CALL
 std::shared_ptr<TreeNode> Parser::parseStatement()
 {
-    size_t saved = save();
     auto node = std::make_shared<TreeNode>(NodeType::Statement);
+    std::shared_ptr<TreeNode> child = nullptr;
 
-    if (need(node, parseAssignmentStatement()) ||
-        need(node, parseIfStatement()) ||
-        need(node, parseCaseStatement()) ||
-        need(node, parseWhileStatement()) ||
-        need(node, parseRepeatStatement()) ||
-        need(node, parseForStatement()) ||
-        need(node, parseProcedureCall())) {
+    TokenType type = peek().type;
+
+    if      (type == TokenType::IFSY)     child = parseIfStatement();
+    else if (type == TokenType::CASESY)   child = parseCaseStatement();
+    else if (type == TokenType::WHILESY)  child = parseWhileStatement();
+    else if (type == TokenType::REPEATSY) child = parseRepeatStatement();
+    else if (type == TokenType::FORSY)    child = parseForStatement();
+    else if (type == TokenType::BEGINSY)  child = parseCompoundStatement();
+    else if (type == TokenType::IDENT) {
+        size_t saved = save();
+        auto varNode = parseVariable(); 
+        
+        if (peek().type == TokenType::BECOMES) { 
+            restore(saved); 
+            child = parseAssignmentStatement();
+        } else { 
+            restore(saved); 
+            child = parseProcedureCall();
+        }
+    }
+
+    if (child) {
+        need(node, child);
         return node;
     }
 
-    restore(saved);
-
-    return node;
+    return node; 
 }
 
 // 25 ASSIGNMENT-STATEMENT -> ident + VARIABLE +  becomes + EXPRESSION
@@ -787,7 +817,8 @@ std::shared_ptr<TreeNode> Parser::parseAssignmentStatement()
     if (var){
         need(node, var);
     }else{
-        syntaxErrors.push_back("Diharapkan Variable untuk diassign di baris " + std::to_string(peek().line));
+        SyntaxError err("Diharapkan Variable untuk diassign", peek().line, peek().column);
+        syntaxErrors.push_back(err.what());
         node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Variable>", true));
         synchronize();
     }
@@ -802,7 +833,8 @@ std::shared_ptr<TreeNode> Parser::parseAssignmentStatement()
     if (expression){
         need(node, expression);
     }else{
-        syntaxErrors.push_back("Diharapkan ada ekspresi untuk diassign di baris " + std::to_string(peek().line));
+        SyntaxError err("Diharapkan ada ekspresi untuk diassign", peek().line, peek().column);
+        syntaxErrors.push_back(err.what());
         node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Expression>", true));
         synchronize();
     }
@@ -824,7 +856,8 @@ std::shared_ptr<TreeNode> Parser::parseIfStatement()
     if (expression){
         need(node, expression);
     }else{
-        syntaxErrors.push_back("Diharapkan ekspresi kondisi setelah 'if' di baris" + std::to_string(peek().line));
+        SyntaxError err("Diharapkan ekspresi kondisi setelah 'if'", peek().line, peek().column);
+        syntaxErrors.push_back(err.what());
         node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Expression>", true));
         synchronize();
     }
@@ -837,7 +870,8 @@ std::shared_ptr<TreeNode> Parser::parseIfStatement()
     if (statement){
         need(node,statement);
     }else{
-        syntaxErrors.push_back("Diharapkan statement setelah 'then' di baris " + std::to_string(peek().line));
+        SyntaxError err("Diharapkan statement setelah 'then'", peek().line, peek().column);
+        syntaxErrors.push_back(err.what());
         node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Statement>", true));
         synchronize();
     }
@@ -850,7 +884,8 @@ std::shared_ptr<TreeNode> Parser::parseIfStatement()
         if (elseStatement) {
             need(node, elseStatement);
         } else {
-            syntaxErrors.push_back("Diharapkan statement setelah 'else' di baris " + std::to_string(peek().line));
+            SyntaxError err("Diharapkan statement setelah 'else'", peek().line, peek().column);
+            syntaxErrors.push_back(err.what());
             node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Else-Statement>", true));
             synchronize();
         }
@@ -874,7 +909,8 @@ std::shared_ptr<TreeNode> Parser::parseCaseStatement()
     if (expression){
         need(node, expression);
     }else{
-        syntaxErrors.push_back("Diharapkan ada ekspresi setelah 'case' di baris " + std::to_string(peek().line));
+        SyntaxError err("Diharapkan ada ekspresi setelah 'case'", peek().line, peek().column);
+        syntaxErrors.push_back(err.what());
         node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Expression>", true));
         synchronize();
     }
@@ -888,7 +924,8 @@ std::shared_ptr<TreeNode> Parser::parseCaseStatement()
     if (caseBlock){
         need(node, caseBlock);
     }else{
-         syntaxErrors.push_back("Diharapkan ada Case Block seteleh 'of' di baris " + std::to_string(peek().line));
+         SyntaxError err("Diharapkan ada Case Block seteleh 'of'", peek().line, peek().column);
+         syntaxErrors.push_back(err.what());
         node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Case Block>", true));
         synchronize();
     }
@@ -919,7 +956,8 @@ std::shared_ptr<TreeNode> Parser::parseCaseBlock()
         if (nextConst) {
             need(node, nextConst);
         } else {
-            syntaxErrors.push_back("Diharapkan konstanta setelah ',' di baris " + std::to_string(peek().line));
+            SyntaxError err("Diharapkan konstanta setelah ','", peek().line, peek().column);
+            syntaxErrors.push_back(err.what());
             node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Constant>", true));
             synchronize();
         }
@@ -933,7 +971,8 @@ std::shared_ptr<TreeNode> Parser::parseCaseBlock()
     if (stmt) {
         need(node, stmt);
     } else {
-        syntaxErrors.push_back("Diharapkan statement setelah ':' di baris " + std::to_string(peek().line));
+        SyntaxError err("Diharapkan statement setelah ':'", peek().line, peek().column);
+        syntaxErrors.push_back(err.what());
         node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Statement>", true));
         synchronize();
     }
@@ -962,9 +1001,12 @@ std::shared_ptr<TreeNode> Parser::parseWhileStatement()
     if (expr) {
         need(node, expr);
     } else {
-        syntaxErrors.push_back("Diharapkan ekspresi kondisi setelah 'while' di baris " + std::to_string(peek().line));
+        SyntaxError err("Diharapkan ekspresi kondisi setelah 'while'", peek().line, peek().column);
+        syntaxErrors.push_back(err.what());
         node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Expression>", true));
+        if (peek().type != TokenType::DOSY) {
         synchronize();
+        }
     }
 
     auto dosy = expect(TokenType::DOSY, NodeType::DoSy, "'do'");
@@ -975,7 +1017,8 @@ std::shared_ptr<TreeNode> Parser::parseWhileStatement()
     if (stmt) {
         need(node, stmt);
     } else {
-        syntaxErrors.push_back("Diharapkan statement setelah 'do' di baris " + std::to_string(peek().line));
+        SyntaxError err("Diharapkan statement setelah 'do'", peek().line, peek().column);
+        syntaxErrors.push_back(err.what());
         node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Statement>", true));
         synchronize();
     }
@@ -994,7 +1037,8 @@ std::shared_ptr<TreeNode> Parser::parseRepeatStatement(){
     if (stmtList) {
         need(node, stmtList);
     } else {
-        syntaxErrors.push_back("Diharapkan statement di dalam blok 'repeat' di baris " + std::to_string(peek().line));
+        SyntaxError err("Diharapkan statement di dalam blok 'repeat'", peek().line, peek().column);
+        syntaxErrors.push_back(err.what());
         node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Statement-List>", true));
         synchronize();
     }
@@ -1007,7 +1051,8 @@ std::shared_ptr<TreeNode> Parser::parseRepeatStatement(){
     if (expr) {
         need(node, expr);
     } else {
-        syntaxErrors.push_back("Diharapkan ekspresi kondisi setelah 'until' di baris " + std::to_string(peek().line));
+        SyntaxError err("Diharapkan ekspresi kondisi setelah 'until'", peek().line, peek().column);
+        syntaxErrors.push_back(err.what());
         node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Expression>", true));
         synchronize();
     }
@@ -1018,19 +1063,71 @@ std::shared_ptr<TreeNode> Parser::parseRepeatStatement(){
 // 31 FOR-STATEMENT -> forsy + ident + becomes + EXPRESSION + ( tosy | downtosy) + EXPRESSION + dosy + STATEMENT
 std::shared_ptr<TreeNode> Parser::parseForStatement()
 {
-    size_t saved = save();
-    auto node = std::make_shared<TreeNode>(NodeType::ForStatement);
-
-    if (!need(node, terminal(TokenType::FORSY, NodeType::ForSy))) return fail(saved);
-    need(node, expect(TokenType::IDENT, NodeType::Ident, "iterator variable"));
-    need(node, expect(TokenType::BECOMES, NodeType::Becomes, ":="));
-    if (!need(node, parseExpression())) return fail(saved);
-    if (!(need(node, terminal(TokenType::TOSY, NodeType::ToSy)) || need(node, terminal(TokenType::DOWNTOSY, NodeType::DownToSy)))) {
-        throw std::runtime_error("Syntax Error: Expected 'to' or 'downto' in for loop.");
+    if (peek().type != TokenType::FORSY) {
+        return nullptr;
     }
-    if (!need(node, parseExpression())) return fail(saved);
-    need(node, expect(TokenType::DOSY, NodeType::DoSy, "do"));
-    if (!need(node, parseStatement())) return fail(saved);
+    
+    auto node = std::make_shared<TreeNode>(NodeType::ForStatement);
+    need(node, terminal(TokenType::FORSY, NodeType::ForSy));
+
+    auto iden = expect(TokenType::IDENT, NodeType::Ident, "variabel iterator");
+    need(node, iden);
+    if (iden->isError) {
+        synchronize();
+    }
+    
+    auto become = expect(TokenType::BECOMES, NodeType::Becomes, "':='");
+    need(node, become);
+    if (become->isError) {
+        synchronize();
+    }
+    
+    auto startExpression = parseExpression();
+    if (startExpression) {
+        need(node, startExpression);
+    } else {
+        SyntaxError err("Diharapkan ekspresi nilai awal setelah ':='", peek().line, peek().column);
+        syntaxErrors.push_back(err.what());
+        node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Start-Expression>", true));
+        synchronize();
+    }
+    
+    if (peek().type == TokenType::TOSY) {
+        need(node, terminal(TokenType::TOSY, NodeType::ToSy));
+    } else if (peek().type == TokenType::DOWNTOSY) {
+        need(node, terminal(TokenType::DOWNTOSY, NodeType::DownToSy));
+    } else {
+        SyntaxError err("Diharapkan 'to' atau 'downto'", peek().line, peek().column);
+        syntaxErrors.push_back(err.what());
+        node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing To/Downto>", true));
+
+    }
+
+    auto endExpression = parseExpression();
+    if (endExpression) {
+        need(node, endExpression);
+    } else {
+        SyntaxError err("Diharapkan ekspresi batas akhir", peek().line, peek().column);
+        syntaxErrors.push_back(err.what());
+        node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing End-Expression>", true));
+        synchronize();
+    }
+
+    auto dosy = expect(TokenType::DOSY, NodeType::DoSy, "'do'");
+    need(node, dosy);
+    if (dosy->isError) {
+        synchronize();
+    }
+
+    auto statement = parseStatement();
+    if (statement) {
+        need(node, statement);
+    } else {
+        SyntaxError err("Diharapkan statement setelah 'do'", peek().line, peek().column);
+        syntaxErrors.push_back(err.what());
+        node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Statement>", true));
+        synchronize();
+    }
 
     return node;
 }
@@ -1038,13 +1135,36 @@ std::shared_ptr<TreeNode> Parser::parseForStatement()
 // 32 PROCEDURE/FUNCTION-CALL ->ident + (lparent + PARAMETER-LIST + rparent)?
 std::shared_ptr<TreeNode> Parser::parseProcedureCall()
 {
-    size_t saved = save();
+    if (peek().type != TokenType::IDENT || peek(1).type != TokenType::LPARENT){
+        return nullptr;
+    }
+    
     auto node = std::make_shared<TreeNode>(NodeType::ProcedureCall);
+    auto iden = terminal(TokenType::IDENT, NodeType::Ident);
+    need(node, iden);
+    if (peek().type == TokenType::LPARENT)
+    {
+        auto lpar = terminal(TokenType::LPARENT, NodeType::LParent);
+        need(node, lpar);
+        
+        auto parameterList = parseParameterList();
+        if (parameterList)
+        {
+            need(node, parameterList);
+        }else{
+            SyntaxError err("Diharapkan parameter list", peek().line, peek().column);
+            syntaxErrors.push_back(err.what());
+            node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Parameter List>", true));
+            synchronize();
+        }
+        
+        auto rpar = expect(TokenType::RPARENT, NodeType::RParent, ")");
+        need(node, rpar);
+        if (rpar->isError){
+            synchronize();
+        }
+    }
 
-    if (!need(node, terminal(TokenType::IDENT, NodeType::Ident))) return fail(saved);
-    if (!need(node, terminal(TokenType::LPARENT, NodeType::LParent))) return fail(saved);
-    need(node, parseParameterList());
-    need(node, expect(TokenType::RPARENT, NodeType::RParent, ")"));
 
     return node;
 }
@@ -1052,14 +1172,33 @@ std::shared_ptr<TreeNode> Parser::parseProcedureCall()
 // 33 PARAMETER-LIST -> EXPRESSION (comma + EXPRESSION)*
 std::shared_ptr<TreeNode> Parser::parseParameterList()
 {
-    size_t saved = save();
     auto node = std::make_shared<TreeNode>(NodeType::ParameterList);
-
-    if (!need(node, parseExpression())) return fail(saved);
+    auto firstExpression = parseExpression();
+    if (firstExpression)
+    {
+        need(node, firstExpression);
+    }else{
+        SyntaxError err("Diharapkan sebuah Expression", peek().line, peek().column);
+        syntaxErrors.push_back(err.what());
+        node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Expression>", true));
+        synchronize();
+    }
 
     while (match(TokenType::COMMA)) {
-        if (!need(node, terminal(TokenType::COMMA, NodeType::Comma))) return fail(saved);
-        if (!need(node, parseExpression())) return fail(saved);
+        auto coma = terminal(TokenType::COMMA, NodeType::Comma);
+        need(node, coma);
+        if (coma->isError){
+            synchronize();
+        }
+        auto nextExpression = parseExpression();
+        if (nextExpression){
+            need(node, nextExpression);
+        }else{
+            SyntaxError err("Diharapkan sebuah Expression seteleh ','", peek().line, peek().column);
+            syntaxErrors.push_back(err.what());
+            node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Expression>", true));
+            synchronize();
+        }     
     }
 
     return node;
@@ -1068,13 +1207,26 @@ std::shared_ptr<TreeNode> Parser::parseParameterList()
 // 34 EXPRESSION -> SIMPLE-EXPRESSION (RELATIONAL-OPERATOR + SIMPLE-EXPRESSION)?
 std::shared_ptr<TreeNode> Parser::parseExpression()
 {
-    size_t saved = save();
+    auto simpleExpr = parseSimpleExpression();
+    if (!simpleExpr) return nullptr;
+
     auto node = std::make_shared<TreeNode>(NodeType::Expression);
+    need(node, simpleExpr);
 
-    if (!need(node, parseSimpleExpression())) return fail(saved);
-
-    if (need(node, parseRelationalOperator())) {
-        if (!(need(node, parseSimpleExpression()))) return fail(saved);
+    // Operator Relasional Opsional (Biasanya hanya 1 kali, tidak diulang)
+    auto relOp = parseRelationalOperator();
+    if (relOp) {
+        need(node, relOp);
+        
+        auto rightExpr = parseSimpleExpression();
+        if (rightExpr) {
+            need(node, rightExpr);
+        } else {
+            SyntaxError err("Diharapkan ekspresi pembanding setelah operator relasional", peek().line, peek().column);
+            syntaxErrors.push_back(err.what());
+            node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing SimpleExpression>", true));
+            synchronize();
+        }
     }
 
     return node;
@@ -1083,16 +1235,31 @@ std::shared_ptr<TreeNode> Parser::parseExpression()
 // 35 SIMPLE-EXPRESSION -> (plus | minus)? TERM (ADDITIVE-OPERATOR + TERM)*
 std::shared_ptr<TreeNode> Parser::parseSimpleExpression()
 {
-    size_t saved = save();
     auto node = std::make_shared<TreeNode>(NodeType::SimpleExpression);
 
-    need(node, terminal(TokenType::PLUS, NodeType::Plus)) ||
-        need(node, terminal(TokenType::MINUS, NodeType::Minus));
+    // Opsional + atau - di awal (Unary)
+    if (peek().type == TokenType::PLUS)       need(node, terminal(TokenType::PLUS, NodeType::Plus));
+    else if (peek().type == TokenType::MINUS) need(node, terminal(TokenType::MINUS, NodeType::Minus));
 
-    if (!need(node, parseTerm())) return fail(saved);
+    auto term = parseTerm();
+    if (!term) return nullptr; // Jika tidak ada awalan, batalkan
+    need(node, term);
 
-    while (need(node, parseAdditiveOperator())) {
-        if (!need(node, parseTerm())) return fail(saved);
+    // Selama token berikutnya adalah Additive Operator (+, -, or)
+    auto addOp = parseAdditiveOperator();
+    while (addOp) {
+        need(node, addOp);
+        
+        auto nextTerm = parseTerm();
+        if (nextTerm) {
+            need(node, nextTerm);
+        } else {
+            SyntaxError err("Diharapkan operand setelah operator penambahan", peek().line, peek().column);
+            syntaxErrors.push_back(err.what());
+            node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Term>", true));
+            synchronize();
+        }
+        addOp = parseAdditiveOperator();
     }
 
     return node;
@@ -1101,103 +1268,166 @@ std::shared_ptr<TreeNode> Parser::parseSimpleExpression()
 // 36 TERM -> FACTOR (MULTIPLICATIVE-OPERATOR + FACTOR)*
 std::shared_ptr<TreeNode> Parser::parseTerm()
 {
-    size_t saved = save();
+    auto factor = parseFactor();
+    if (!factor) return nullptr; // Jika Factor gagal, Term juga gagal (FIRST Set)
+
     auto node = std::make_shared<TreeNode>(NodeType::Term);
+    need(node, factor);
 
-    if (!need(node, parseFactor())) return fail(saved);
-
-    while (need(node, parseMultiplicativeOperator())) {
-        if (!need(node, parseFactor())) return fail(saved);
+    // Selama token berikutnya adalah Multiplicative Operator (*, /, mod, dll)
+    auto multOp = parseMultiplicativeOperator();
+    while (multOp) {
+        need(node, multOp);
+        
+        auto nextFactor = parseFactor();
+        if (nextFactor) {
+            need(node, nextFactor);
+        } else {
+            SyntaxError err("Diharapkan operand setelah operator perkalian", peek().line, peek().column);
+            syntaxErrors.push_back(err.what());
+            node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Factor>", true));
+            synchronize();
+        }
+        multOp = parseMultiplicativeOperator(); 
     }
 
     return node;
 }
 
-// 37 FACTOR -> ident | intcon | charcon | string | (lparent + EXPRESSION + rparent) | notsy + FACTOR | PROCEDURE/FUNCTION-CALL
+// 37 FACTOR -> (minus)? FACTOR | intcon | charcon | string | (lparent + EXPRESSION + rparent) | notsy + FACTOR | PROCEDURE/FUNCTION-CALL | VARIABLE
 std::shared_ptr<TreeNode> Parser::parseFactor()
 {
-    size_t saved = save();
+    TokenType t = peek().type;
     auto node = std::make_shared<TreeNode>(NodeType::Factor);
 
-    // cek procedure/function call
-    size_t callSaved = save();
-    if (need(node, parseProcedureCall())) return node;
-    restore(callSaved);
-
-    // cek variable
-    if (need(node, parseVariable())) return node;
-    restore(saved);
-
-    // cek const
-    if (need(node, terminal(TokenType::INTCON, NodeType::IntCon)) ||
-        need(node, terminal(TokenType::REALCON, NodeType::RealCon)) ||
-        need(node, terminal(TokenType::CHARCON, NodeType::CharCon)) ||
-        need(node, terminal(TokenType::STRINGCON, NodeType::String))) {
-        return node;
-    }
-    restore(saved);
-
-    // cek (lparent + expression + rparent)
-    if (match(TokenType::LPARENT)) {
-        if (!need(node, terminal(TokenType::LPARENT, NodeType::LParent))) return fail(saved);
-        if (!need(node, parseExpression())) return fail(saved);
-        need(node, expect(TokenType::RPARENT, NodeType::RParent, ")"));
-        return node;
-    }
-    restore(saved);
-
-    // cek (notsy + factor)
-    if (match(TokenType::NOTSY)) {
-        if (!need(node, terminal(TokenType::NOTSY, NodeType::NotSy))) return fail(saved);
-        if (!need(node, parseFactor())) return fail(saved);
+    // Cek ada minus di depan (Unary Minus)
+    if (t == TokenType::MINUS) {
+        need(node, terminal(TokenType::MINUS, NodeType::Minus)); 
+        
+        auto innerFactor = parseFactor(); 
+        if (innerFactor) {
+            need(node, innerFactor);
+        } else {
+            SyntaxError err("Diharapkan faktor setelah '-'", peek().line, peek().column);
+            syntaxErrors.push_back(err.what());
+            node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Factor>", true));
+            synchronize();
+        }
         return node;
     }
 
-    return fail(saved);
+    // Cek Const
+    if (t == TokenType::INTCON)   { need(node, terminal(t, NodeType::IntCon)); return node; }
+    if (t == TokenType::REALCON)  { need(node, terminal(t, NodeType::RealCon)); return node; }
+    if (t == TokenType::CHARCON)  { need(node, terminal(t, NodeType::CharCon)); return node; }
+    if (t == TokenType::STRINGCON){ need(node, terminal(t, NodeType::String)); return node; }
+
+    // Cek (lparent + expression + rparent)
+    if (t == TokenType::LPARENT) {
+        need(node, terminal(TokenType::LPARENT, NodeType::LParent));
+        
+        auto expr = parseExpression();
+        if (expr) need(node, expr);
+        else {
+            SyntaxError err("Diharapkan ekspresi di dalam kurung", peek().line, peek().column);
+            syntaxErrors.push_back(err.what());
+            node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Expression>", true));
+            synchronize();
+        }
+        
+        auto rparent = expect(TokenType::RPARENT, NodeType::RParent, "')'");
+        need(node, rparent);
+        if (rparent->isError) synchronize();
+        return node;
+    }
+
+    // Cek (notsy + factor)
+    if (t == TokenType::NOTSY) {
+        need(node, terminal(TokenType::NOTSY, NodeType::NotSy));
+        
+        auto innerFactor = parseFactor();
+        if (innerFactor) need(node, innerFactor);
+        else {
+            SyntaxError err("Diharapkan faktor setelah 'not'", peek().line, peek().column);
+            syntaxErrors.push_back(err.what());
+            node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Factor>", true));
+            synchronize();
+        }
+        return node;
+    }
+
+    // Cek Identifier: Procedure/Function Call ATAU Variable
+    // Karena keduanya diawali IDENT, ini SATU-SATUNYA tempat kita butuh save() & restore()
+    if (t == TokenType::IDENT) {
+        size_t saved = save(); 
+        
+        // Cek Procedure Call dulu
+        auto callNode = parseProcedureCall();
+        if (callNode) {
+            need(node, callNode);
+            return node;
+        }
+        
+        restore(saved); // Kalau gagal (bukan procedure call), kembalikan token
+        
+        // Cek Variabel
+        auto varNode = parseVariable();
+        if (varNode) {
+            need(node, varNode);
+            return node;
+        }
+        
+        restore(saved);
+    }
+
+    return nullptr; 
 }
 
 // 38 RELATIONAL-OPERATOR -> eql | neq | gtr | geq | lss | leq
 std::shared_ptr<TreeNode> Parser::parseRelationalOperator()
 {
-    size_t saved = save();
+    TokenType t = peek().type;
     auto node = std::make_shared<TreeNode>(NodeType::RelationalOperator);
 
-    if (need(node, terminal(TokenType::EQL, NodeType::Eql)) ||
-        need(node, terminal(TokenType::NEQ, NodeType::Neq)) ||
-        need(node, terminal(TokenType::GTR, NodeType::Gtr)) ||
-        need(node, terminal(TokenType::GEQ, NodeType::Geq)) ||
-        need(node, terminal(TokenType::LSS, NodeType::Lss)) ||
-        need(node, terminal(TokenType::LEQ, NodeType::Leq))) return node;
+    if      (t == TokenType::EQL) need(node, terminal(t, NodeType::Eql));
+    else if (t == TokenType::NEQ) need(node, terminal(t, NodeType::Neq));
+    else if (t == TokenType::GTR) need(node, terminal(t, NodeType::Gtr));
+    else if (t == TokenType::GEQ) need(node, terminal(t, NodeType::Geq));
+    else if (t == TokenType::LSS) need(node, terminal(t, NodeType::Lss));
+    else if (t == TokenType::LEQ) need(node, terminal(t, NodeType::Leq));
+    else return nullptr;
 
-    return fail(saved);
+    return node;
 }
 
 // 39 ADDITIVE-OPERATOR -> plus | minus | orsy
 std::shared_ptr<TreeNode> Parser::parseAdditiveOperator()
 {
-    size_t saved = save();
+    TokenType t = peek().type;
     auto node = std::make_shared<TreeNode>(NodeType::AdditiveOperator);
 
-    if (need(node, terminal(TokenType::PLUS, NodeType::Plus)) ||
-        need(node, terminal(TokenType::MINUS, NodeType::Minus)) ||
-        need(node, terminal(TokenType::ORSY, NodeType::OrSy))) return node;
+    if      (t == TokenType::PLUS)  need(node, terminal(t, NodeType::Plus));
+    else if (t == TokenType::MINUS) need(node, terminal(t, NodeType::Minus));
+    else if (t == TokenType::ORSY)  need(node, terminal(t, NodeType::OrSy));
+    else return nullptr;
 
-    return fail(saved);
+    return node;
 }
 
 // 40 MULTIPLICATIVE-OPERATOR -> times | rdiv | idiv | imod | andsy
 std::shared_ptr<TreeNode> Parser::parseMultiplicativeOperator()
 {
-    size_t saved = save();
+    TokenType t = peek().type;
     auto node = std::make_shared<TreeNode>(NodeType::MultiplicativeOperator);
 
-    if (need(node, terminal(TokenType::TIMES, NodeType::Times)) ||
-        need(node, terminal(TokenType::RDIV, NodeType::RDiv)) ||
-        need(node, terminal(TokenType::IDIV, NodeType::IDiv)) ||
-        need(node, terminal(TokenType::IMOD, NodeType::IMod)) ||
-        need(node, terminal(TokenType::ANDSY, NodeType::AndSy))) return node;
+    if      (t == TokenType::TIMES) need(node, terminal(t, NodeType::Times));
+    else if (t == TokenType::RDIV)  need(node, terminal(t, NodeType::RDiv));
+    else if (t == TokenType::IDIV)  need(node, terminal(t, NodeType::IDiv));
+    else if (t == TokenType::IMOD)  need(node, terminal(t, NodeType::IMod));
+    else if (t == TokenType::ANDSY) need(node, terminal(t, NodeType::AndSy));
+    else return nullptr;
 
-    return fail(saved);
+    return node;
 }
 
 // Revisi
