@@ -1,0 +1,17 @@
+program Kasus5;
+
+var
+  a, b, c: Integer;
+  valid: Boolean;
+
+begin
+  a := 10;
+  b := 3;
+  
+  c := a div b + a mod b * 5 - (a + 2) * (b - 1);
+  
+  valid := (a > b) AND (c <> 0) OR NOT (a <= 5);
+  
+  if valid then
+    c := c * 1;
+end.
