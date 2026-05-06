@@ -68,6 +68,7 @@ int main()
                 std::shared_ptr<TreeNode> parseTree = parser.parseProgram();
 
                 if (!parser.syntaxErrors.empty()) {
+                    std::cout << "\nSyntax errors found:\n";
                     for (const auto& err : parser.syntaxErrors) {
                         std::cerr << "- " << err << "\n";
                     }

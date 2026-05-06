@@ -31,3 +31,5 @@ CompilerError::CompilerError(const std::string &msg, int l, int c, const std::st
 CompilerError::~CompilerError() = default;
 
 LexicalError::~LexicalError() = default;
+
+SyntaxError::~SyntaxError() = default;
