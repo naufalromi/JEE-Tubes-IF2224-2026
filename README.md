@@ -1,6 +1,6 @@
-# ⚙️ Arion Compiler: Milestone 1 - Lexical Analysis
+# Arion Compiler: Milestone 2 - Syntax Analyzer
 
-A **custom lexical analyzer (lexer)** written in **GNU C/C++ (GCC/G++)**. It takes raw source code in `.txt` format for the Arion programming language and converts it into a sequence of meaningful tokens using a **Deterministic Finite Automata (DFA)**.
+This project implements a custom lexical analyzer and syntax analyzer—developed in GNU C/C++ for the Arion programming language. The lexer reads raw .txt source code in Arion Programming Language and utilizes a Deterministic Finite Automaton (DFA) to convert it into a sequence of meaningful tokens. These tokens are then evaluated by a Recursive Descent parser based on strict non-terminal grammar rules to construct a hierarchical Parse Tree. Additionally, the system incorporates a panic-mode synchronization mechanism for robust syntax error detection and recovery.
 
 This project is part of the IF2224 - Formal Language and Automata Theory course at STEI ITB.
 
@@ -8,7 +8,7 @@ This project is part of the IF2224 - Formal Language and Automata Theory course 
 
 <div align="center">
 
-### 👥 Contributors
+### Contributors
 
 </div>
 
@@ -51,38 +51,73 @@ This project is part of the IF2224 - Formal Language and Automata Theory course 
 
 ---
 
-## ✨ Features
+## Features
 
 ### This project contains:
 
 1. **Tokenizes Arion Source Code**: Reads `.txt` files containing Arion code and outputs a documented list of tokens.  
-2. **DFA-based Engine**: Processes characters one-by-one entirely based on manual DFA rules.  
-3. **No External Libraries**: Built from scratch without the use of any lexer generation tools or libraries.  
-4. **Makefile Integration**: Streamlined compilation using Makefile.  
-5. **Modular Design**: Structured to easily integrate into the future pipeline (Syntax Analysis, Semantic Analysis, Intermediate Code Generation).  
+2. **DFA-based Engine**: Processes characters one-by-one entirely based on manual DFA rules.
+3. **Recursive Descent Parser**: Evaluates the tokenized data strictly against 42 non-terminal grammar rules.
+4. **Parse Tree Generator**: Constructs a hierarchical, node-based representation of the validated source code.
+5. **Error Handling**: Implements handler for error in lexical analyzer and syntax analyzer
+4. **No External Libraries**: Built from scratch without the use of any lexer generation tools or libraries.  
+5. **Makefile Integration**: Streamlined compilation using Makefile.  
+6. **Modular Design**: Structured to easily integrate into the future pipeline (Semantic Analysis and Intermediate Code Generation).  
 
 ---
 
-## 📁 Repository Structure
-
-- `src/`: Directory to store all C/C++ source code  
-- `doc/`: Directory to store the project report  
-- `test/`: Directory to store all input/output `.txt` files used for testing  
-
+## Repository Structure
+```
+.
+├── README.md
+├── build
+├── data
+├── doc
+│   └── Laporan-2-JEE.pdf
+├── enumref.txt
+├── jeecompiler
+├── makefile
+├── output
+│   └── output.txt
+├── src
+│   ├── common
+│   │   ├── Error.cpp
+│   │   ├── Error.hpp
+│   │   ├── NodeType.hpp
+│   │   ├── Reader.cpp
+│   │   ├── Reader.hpp
+│   │   ├── Token.cpp
+│   │   ├── Token.hpp
+│   │   ├── Tree.cpp
+│   │   ├── Tree.hpp
+│   │   ├── Writer.cpp
+│   │   └── Writer.hpp
+│   ├── lexer
+│   │   ├── Lexer.cpp
+│   │   ├── Lexer.hpp
+│   │   ├── LexerState.hpp
+│   │   ├── SpecificScanners.cpp
+│   │   └── SpecificScanners.hpp
+│   ├── main.cpp
+│   └── syntax
+│       ├── Parser.cpp
+│       └── Parser.hpp
+└── test
+```
 ---
 
-## 🔧 Installation
+## Installation
 
-### 📦 Requirements
+### Requirements
 
 - **GNU C/C++ Compiler (GCC/G++)**  
 - **Make**  
 
 ---
 
-### ⬇️ Installing Dependencies
+### Installing Dependencies
 
-#### 🖼 Windows
+#### Windows
 1. Download and install MinGW-w64 from an official distributor  
 2. Ensure `gcc`, `g++`, and `make` (or `mingw32-make`) are added to your system PATH  
 3. Verify:
@@ -91,7 +126,7 @@ This project is part of the IF2224 - Formal Language and Automata Theory course 
    make --version
 ````
 
-#### 🐧 Linux / UNIX
+#### Linux / UNIX
 
 1. Open your terminal
 2. Install build essentials:
@@ -108,7 +143,7 @@ g++ --version && make --version
 
 ---
 
-## 🛠️ How To Run
+## How To Run
 
 1. Clone the repository
 
@@ -132,7 +167,7 @@ make run
 
 <div align="center">
 
-### 📊 Work Distribution
+### Work Distribution
 
 </div>
 
@@ -150,9 +185,7 @@ make run
 <td>Billie Bhaskara Wibawa</td>
 <td>13524024</td>
 <td>
-Implementation: Alpha Scanner, DFA State Builder<br>
-Diagram: Alpha Scanner, Report<br>
-Guidance: DFA State Implementation
+Report and Coding
 </td>
 <td>25%</td>
 </tr>
@@ -161,8 +194,7 @@ Guidance: DFA State Implementation
 <td>Raysha Erviandika Putra</td>
 <td>13524050</td>
 <td>
-Implementation: Error Tracing, Numeric Scanner, Text Scanner, Symbol Scanner<br>
-Diagram: Alpha Scanner
+Report and Coding
 </td>
 <td>25%</td>
 </tr>
@@ -171,8 +203,7 @@ Diagram: Alpha Scanner
 <td>Muhammad Naufal Romi Annafi</td>
 <td>13524058</td>
 <td>
-Diagram: Global DFA, Numeric Scanner, Text Scanner, Symbol Scanner<br>
-Report
+Report and Coding
 </td>
 <td>25%</td>
 </tr>
@@ -181,9 +212,7 @@ Report
 <td>Dzaki Ahmad Al Hussainy</td>
 <td>13524084</td>
 <td>
-Pre-Planning: Lexer Architecture Design<br>
-Testing & Implementation<br>
-Initial Program Structure
+Report and Coding
 </td>
 <td>25%</td>
 </tr>
