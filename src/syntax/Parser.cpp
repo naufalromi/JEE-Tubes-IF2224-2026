@@ -163,7 +163,7 @@ std::shared_ptr<TreeNode> Parser::parseConstDeclaration()
         need(node, idNode);
         if (idNode->isError) synchronize();
 
-        auto eqlNode = expect(TokenType::BECOMES, NodeType::Becomes, "':='");
+        auto eqlNode = expect(TokenType::EQL, NodeType::Eql, "'=='");
         need(node, eqlNode);
 
         auto constVal = parseConstant();
@@ -783,7 +783,6 @@ std::shared_ptr<TreeNode> Parser::parseStatement()
     else if (type == TokenType::WHILESY)  child = parseWhileStatement();
     else if (type == TokenType::REPEATSY) child = parseRepeatStatement();
     else if (type == TokenType::FORSY)    child = parseForStatement();
-    else if (type == TokenType::BEGINSY)  child = parseCompoundStatement();
     else if (type == TokenType::IDENT) {
         size_t saved = save();
         auto varNode = parseVariable(); 
@@ -1482,6 +1481,13 @@ std::shared_ptr<TreeNode> Parser::parseComponentVariable()
 }
 
 const Token &Parser::peek(int offset) const{
+    if (pos + offset >= tokens.size()) {
+        if (!tokens.empty()) {
+            return tokens.back();
+        }
+        static Token safeToken{TokenType::PERIOD, "EOF", 0, 0};
+        return safeToken;
+    }
     return tokens[pos + offset];
 }
 

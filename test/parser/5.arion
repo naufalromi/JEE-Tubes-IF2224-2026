@@ -1,21 +1,10 @@
-program ParseFive;
-const
-    MaxVal = 100;
-    LabelText = 'ready';
-type
-    Level = (Low, Medium, High);
-    Score = 1..10;
-    Table = array [1..3] of Integer;
-    Pair = record
-        left, right: Integer;
-        mark: Integer
-    end;
+program UjiErrorLima;
+
 var
-    a, b: Integer;
+  a, b, c: Integer;
+
 begin
-    a := MaxVal;
-    b := (a div 10) + 7;
-    writeln(LabelText);
-    writeln(a);
-    writeln(b)
+  a := 10;
+  b := 5;
+  c := (a + b * 2;
 end.

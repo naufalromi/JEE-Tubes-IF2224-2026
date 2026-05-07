@@ -1,23 +1,19 @@
-program Test1;
+program Kasus1;
 
 const
-  MaxVal == 100;
-  MinVal == -10;
-  Grade == 'A';
-  Welcome == 'Hello Arion';
-
-type
-  IdxRange == 1..100;
-  Days == (Mon, Tue, Wed, Thu, Fri);
-  ScoreArray == array [1..100] of Integer;
+  PI == 3.14;
+  MaxIterasi == 100;
+  Pesan == 'Selamat Datang';
 
 var
-  x, y, z: Integer;
-  myScore: ScoreArray;
-  tempArr: array [Mon..Fri] of Integer;
+  jariJari, luas: Real;
+  selesai: Boolean;
 
 begin
-  x := MaxVal;
-  y := MinVal;
-  z := x + y;
+  jariJari := 10.5;
+  luas := PI * (jariJari * jariJari);
+  selesai := False;
+  writeln(Pesan);
+  writeln('Luas Lingkaran: ');
+  writeln(luas)
 end.

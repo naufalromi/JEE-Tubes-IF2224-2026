@@ -1,13 +1,11 @@
-program Hello;
+program UjiErrorSatu;
+
+const
+  PI := 3.14;
 
 var
-  a, b: integer;
+  luas: Real;
 
 begin
-  a := 5;
-  b := a + 10;
-  writeln('Result = ', b);
-  {Halo}
-  {Dunia}
-  {Saya King Nassir}
+  luas := PI * 10.0
 end.

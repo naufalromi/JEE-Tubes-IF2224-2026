@@ -1,43 +1,30 @@
-program Test2;
+program Kasus2;
 
-type
-  { Menguji <enumerated> }
-  Bulan == (Jan, Feb, Mar, Apr);
+var
+  i, batas, level: Integer;
+  pilihan: Char;
+
+begin
+  batas := 5;
   
-  { Menguji <range> }
-  Tanggal == 1..31;
-  
-  { Menguji <record-type>, <field-list>, dan <field-part> }
-  Siswa == record
-    id, umur: Integer;
-    kelas: Char
+  for i := 1 to batas do
+    if (i mod 2 == 0) then
+      writeln('Genap')
+    else
+      writeln('Ganjil');
+
+  while i < 10 do 
+    i := i + 1;
+
+  repeat
+    batas := batas - 1;
+  until batas == 0;
+
+  case pilihan of
+    'A': level := 100;
+    'B': level := 50;
+    'C': level := 10
   end;
 
-var
-  s: Siswa;
-
-{ Menguji <subprogram-declaration>, <procedure-declaration>, dan <formal-parameter-list> }
-procedure CetakSiswa(pId, pUmur: Integer; pKelas: Char);
-var
-  { Menguji <block> (declaration-part di dalam subprogram) }
-  tempId: Integer;
-begin
-  { Menguji <block> (compound-statement di dalam subprogram) }
-  tempId := pId;
-end;
-
-{ Menguji <subprogram-declaration>, <function-declaration> }
-function CekLulus(nilai: Char): Integer;
-const
-  Batas == 'C';
-begin
-  CekLulus := 1;
-end;
-
-begin
-  s.id := 101;
-  s.umur := 16;
-  s.kelas := 'A';
-  
-  CetakSiswa(s.id, s.umur, s.kelas);
+  ;
 end.

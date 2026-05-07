@@ -1,13 +1,13 @@
-program ParseTwo;
+program UjiErrorDua;
+
 var
-    x, y, z: Integer;
+  i: Integer;
+
 begin
-    x := 1;
-    y := x + 2;
-    z := (y * 3) + (x + 4);
-    writeln('Hello, world');
-    writeln('Arithmetic and calls');
-    writeln(x);
-    writeln y;
-    writeln(z
+  i := 0;
+  
+  while i < 5 do
+  begin
+    i := i + 1;
+  end;
 end.

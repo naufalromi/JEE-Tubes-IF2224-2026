@@ -1,38 +1,25 @@
-program Test4;
+program Kasus4;
 
 var
-  i, x, y: Integer;
-  f: Real;
-  flag: Integer;
+  hasil: Integer;
 
-{ Fungsi pembantu untuk menguji Procedure/Function Call di dalam ekspresi }
-function Kalkulasi(a, b: Integer): Integer;
+procedure Tukar(a, b: Integer; mode: Char);
+var 
+  temp: Integer;
 begin
-  Kalkulasi := a * b;
+  if mode == 'X' then
+    temp := a
+end;
+
+function Faktorial(n: Integer): Integer;
+begin
+  if n <= 1 then
+    Faktorial := 1
+  else
+    Faktorial := n * Faktorial(n - 1);
 end;
 
 begin
-  { 1. Menguji <factor> dengan operator Unary (Plus/Minus di awal) dan Literal }
-  x := -10;
-  f := +3.14;
-  
-  { 2. Menguji <simple-expression>, <term>, <additive-operator>, <multiplicative-operator> }
-  y := (x + 20) * 5 div 2 mod 3;
-  f := f / 2.0;
-
-  { 3. Menguji <for-statement> dengan 'to' }
-  for i := 1 to 10 do
-    x := x + 1;
-
-  { 4. Menguji <for-statement> dengan 'downto' }
-  for i := x downto 0 do
-    { 5. Menguji <expression>, <relational-operator>, dan <factor> (not) }
-    if (i > 5) and (i <= 10) or not (x == 0) then
-      flag := 1
-    else if (i <> 3) and (x >= i) or (x < 0) then
-      flag := 0;
-
-  { 6. Menguji <procedure/function-call> dan <parameter-list> (dengan banyak parameter) }
-  CetakData('Hasil Akhir: ', x, f, Kalkulasi(x, y));
-
+  Tukar(10, 20, 'X');
+  hasil := Faktorial(5);
 end.
