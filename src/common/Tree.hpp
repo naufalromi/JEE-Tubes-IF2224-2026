@@ -15,7 +15,6 @@ public:
 
 	TreeNode(NodeType, const std::string& = "", bool = false);
 	void addChild(const std::shared_ptr<TreeNode>& child);
-
 	std::string typeString() const {
 		return nodeTypeToString(type);
 	}
