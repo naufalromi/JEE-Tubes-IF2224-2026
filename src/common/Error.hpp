@@ -51,3 +51,9 @@ class SyntaxError : public CompilerError{
         : CompilerError(msg, l, c, "Syntax Error") {};
     ~SyntaxError();
 };
+
+class SemanticError : public CompilerError{
+    SemanticError(const std::string &msg, int l, int c)
+        : CompilerError(msg, l, c, "Semantic Error") {};
+    ~SemanticError();
+};

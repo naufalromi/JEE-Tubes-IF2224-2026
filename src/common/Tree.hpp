@@ -12,6 +12,8 @@ public:
 	std::string value;
 	std::vector<std::shared_ptr<TreeNode>> children;
 	bool isError;
+	int line;
+    int column;
 
 	TreeNode(NodeType, const std::string& = "", bool = false);
 	void addChild(const std::shared_ptr<TreeNode>& child);

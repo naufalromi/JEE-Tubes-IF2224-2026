@@ -102,7 +102,9 @@ enum class NodeType {
     Lss,
     Leq,
     TypeSy,
-    Unknown
+    Unknown,
+    Literal,
+    BinaryOperation
 };
 
 // Utility to convert enum to string for printing
