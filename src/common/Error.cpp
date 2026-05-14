@@ -33,3 +33,5 @@ CompilerError::~CompilerError() = default;
 LexicalError::~LexicalError() = default;
 
 SyntaxError::~SyntaxError() = default;
+
+SemanticError::~SemanticError() = default;

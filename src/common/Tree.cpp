@@ -1,7 +1,7 @@
 #include "Tree.hpp"
 #include "NodeType.hpp"
 
-TreeNode::TreeNode(const NodeType type_, const std::string& value_, bool condition_) :type(type_), value(value_), isError(condition_){};
+TreeNode::TreeNode(const NodeType type_, const std::string& value_, bool condition_) :type(type_), value(value_), isError(condition_), line(0), column(0){};
 void TreeNode::addChild(const std::shared_ptr<TreeNode>& child) {
     if (child == nullptr) return;
     children.push_back(child);

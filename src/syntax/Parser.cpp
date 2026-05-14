@@ -31,11 +31,12 @@ std::shared_ptr<TreeNode> Parser::terminal(TokenType tokenType, NodeType nodeTyp
     if (!match(tokenType)) {
         return nullptr;
     }
-
     auto value = tokens[pos].value;
+    auto node = std::make_shared<TreeNode>(nodeType, value);
+    node->line = tokens[pos].line;
+    node->column = tokens[pos].column;
     pos++;
-
-    return std::make_shared<TreeNode>(nodeType, value);
+    return node;
 }
 
 std::shared_ptr<TreeNode> Parser::expect(TokenType tokenType, NodeType nodeType, std::string expectedStr)
