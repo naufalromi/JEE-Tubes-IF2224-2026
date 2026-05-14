@@ -38,7 +38,7 @@ int main()
         std::cin >> filenum;
 
         if (typeChoice == 2) {
-            inputPath = "test/lexer/" + std::to_string(filenum) + ".arion";
+            inputPath = "test/parser/" + std::to_string(filenum) + ".arion";
         } else {
             inputPath = "test/lexer/" + std::to_string(filenum) + ".arion";
         }

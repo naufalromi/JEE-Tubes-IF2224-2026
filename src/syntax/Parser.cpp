@@ -500,20 +500,21 @@ std::shared_ptr<TreeNode> Parser::parseFieldList()
     auto node = std::make_shared<TreeNode>(NodeType::FieldList);
 
     auto firstField = parseFieldPart();
-    if (firstField)
-    {
+    if (firstField) {
         need(node, firstField);
-    }else{
+    } else {
         return nullptr;
     }
 
-    while (peek().type == (TokenType::SEMICOLON)) {
+    while (peek().type == TokenType::SEMICOLON) {
         need(node, terminal(TokenType::SEMICOLON, NodeType::Semicolon));
-
+        if (peek().type == TokenType::ENDSY) {
+            break; 
+        }
         auto nextField = parseFieldPart();
-        if (nextField){
+        if (nextField) {
             need(node, nextField);
-        }else{
+        } else {
             SyntaxError err("Diharapkan field-part setelah ';'", peek().line, peek().column);
             syntaxErrors.push_back(err.what());
             node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Field-Part>", true));
@@ -1013,13 +1014,13 @@ std::shared_ptr<TreeNode> Parser::parseWhileStatement()
     need(node, dosy);
     if (dosy->isError) synchronize();
 
-    auto stmt = parseStatement();
-    if (stmt) {
-        need(node, stmt);
+    auto compStmt = parseCompoundStatement();
+    if (compStmt) {
+        need(node, compStmt);
     } else {
-        SyntaxError err("Diharapkan statement setelah 'do'", peek().line, peek().column);
+        SyntaxError err("Diharapkan compound statement (begin...end) setelah 'do'", peek().line, peek().column);
         syntaxErrors.push_back(err.what());
-        node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Statement>", true));
+        node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Compound-Statement>", true));
         synchronize();
     }
 
@@ -1119,13 +1120,13 @@ std::shared_ptr<TreeNode> Parser::parseForStatement()
         synchronize();
     }
 
-    auto statement = parseStatement();
-    if (statement) {
-        need(node, statement);
+    auto compStmt = parseCompoundStatement();
+    if (compStmt) {
+        need(node, compStmt);
     } else {
-        SyntaxError err("Diharapkan statement setelah 'do'", peek().line, peek().column);
+        SyntaxError err("Diharapkan compound statement (begin...end) setelah 'do'", peek().line, peek().column);
         syntaxErrors.push_back(err.what());
-        node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Statement>", true));
+        node->addChild(std::make_shared<TreeNode>(NodeType::Error, "<Missing Compound-Statement>", true));
         synchronize();
     }
 
