@@ -24,7 +24,7 @@ std::shared_ptr<ProgramNode> ASTBuilder::buildProgram(std::shared_ptr<TreeNode> 
         }
     }
 
-    auto program = std::make_shared<ProgramNode>(programName);
+    auto program = setSourceLocation(std::make_shared<ProgramNode>(programName), node);
     program->declarations = declarations;
     program->statements = statements;
 
@@ -32,7 +32,7 @@ std::shared_ptr<ProgramNode> ASTBuilder::buildProgram(std::shared_ptr<TreeNode> 
 }
 
 std::shared_ptr<BlockNode> ASTBuilder::buildBlock(std::shared_ptr<TreeNode> node) {
-    auto blockNode = std::make_shared<BlockNode>();
+    auto blockNode = setSourceLocation(std::make_shared<BlockNode>(), node);
     if (!node) return blockNode;
     for (const auto& child : node->children) {
         if (child->type == NodeType::DeclarationPart) {
@@ -88,7 +88,7 @@ std::vector<std::shared_ptr<ConstDeclarationNode>> ASTBuilder::buildConstDeclara
             auto literalValue = buildLiteral(child); 
 
             if (!currentName.empty() && literalValue != nullptr) {
-                result.push_back(std::make_shared<ConstDeclarationNode>(currentName, literalValue));
+                result.push_back(setSourceLocation(std::make_shared<ConstDeclarationNode>(currentName, literalValue), child));
                 currentName = ""; 
             }
         }
@@ -111,7 +111,7 @@ std::vector<std::shared_ptr<TypeDeclarationNode>> ASTBuilder::buildTypeDeclarati
             auto typeDefinition = buildType(child);
             
             if (!currentName.empty() && typeDefinition != nullptr) {
-                result.push_back(std::make_shared<TypeDeclarationNode>(currentName, typeDefinition));
+                result.push_back(setSourceLocation(std::make_shared<TypeDeclarationNode>(currentName, typeDefinition), child));
                 currentName = "";
             }
         }
@@ -135,7 +135,7 @@ std::vector<std::shared_ptr<VarDeclarationNode>> ASTBuilder::buildVarDeclaration
         else if (child->type == NodeType::Type) {
             auto typeNode = buildType(child);
             for (const auto& name : tempNames) {
-                result.push_back(std::make_shared<VarDeclarationNode>(name, typeNode));
+                result.push_back(setSourceLocation(std::make_shared<VarDeclarationNode>(name, typeNode), child));
             }
             tempNames.clear();
         }
@@ -164,7 +164,7 @@ std::shared_ptr<ProcedureDeclarationNode> ASTBuilder::buildProcedureDeclaration(
             bodyNode = buildBlock(child);
         }
     }
-    auto procNode = std::make_shared<ProcedureDeclarationNode>(procName);
+    auto procNode = setSourceLocation(std::make_shared<ProcedureDeclarationNode>(procName), node);
     procNode->parameters = parameters;
     procNode->body = bodyNode;
 
@@ -201,9 +201,9 @@ std::shared_ptr<FunctionDeclarationNode> ASTBuilder::buildFunctionDeclaration(st
         }
     }
 
-    auto returnTypeNode = std::make_shared<SimpleTypeNode>(returnTypeName);
+    auto returnTypeNode = setSourceLocation(std::make_shared<SimpleTypeNode>(returnTypeName), node);
 
-    auto funcNode = std::make_shared<FunctionDeclarationNode>(funcName, returnTypeNode);
+    auto funcNode = setSourceLocation(std::make_shared<FunctionDeclarationNode>(funcName, returnTypeNode), node);
     funcNode->parameters = parameters;
     funcNode->body = bodyNode;
 
@@ -231,13 +231,13 @@ std::vector<std::shared_ptr<VarDeclarationNode>> ASTBuilder::buildFormalParamete
                 }
                 
                 else if (groupChild->type == NodeType::Ident) {
-                    paramType = std::make_shared<SimpleTypeNode>(groupChild->value);
+                    paramType = setSourceLocation(std::make_shared<SimpleTypeNode>(groupChild->value), groupChild);
                 }
             }
 
             if (paramType) {
                 for (const auto& name : paramNames) {
-                    allParameters.push_back(std::make_shared<VarDeclarationNode>(name, paramType));
+                    allParameters.push_back(setSourceLocation(std::make_shared<VarDeclarationNode>(name, paramType), child));
                 }
             }
         }
@@ -252,7 +252,7 @@ std::shared_ptr<TypeNode> ASTBuilder::buildType(std::shared_ptr<TreeNode> node) 
     auto typeChild = node->children[0];
 
     if (typeChild->type == NodeType::Ident) {
-        return std::make_shared<SimpleTypeNode>(typeChild->value);
+        return setSourceLocation(std::make_shared<SimpleTypeNode>(typeChild->value), typeChild);
     } 
     else if (typeChild->type == NodeType::RecordType) {
         return buildRecordType(typeChild);
@@ -271,7 +271,7 @@ std::shared_ptr<TypeNode> ASTBuilder::buildType(std::shared_ptr<TreeNode> node) 
 }
 
 std::shared_ptr<TypeNode> ASTBuilder::buildRecordType(std::shared_ptr<TreeNode> node) {
-    auto recordNode = std::make_shared<RecordTypeNode>();
+    auto recordNode = setSourceLocation(std::make_shared<RecordTypeNode>(), node);
 
     for (const auto& child : node->children) {
         if (child->type == NodeType::FieldList) {
@@ -295,7 +295,7 @@ std::shared_ptr<TypeNode> ASTBuilder::buildRecordType(std::shared_ptr<TreeNode> 
 
                     if (fieldType) {
                         for (const auto& name : tempNames) {
-                            recordNode->fields.push_back(std::make_shared<VarDeclarationNode>(name, fieldType));
+                            recordNode->fields.push_back(setSourceLocation(std::make_shared<VarDeclarationNode>(name, fieldType), fieldPart));
                         }
                     }
                 }
@@ -316,14 +316,14 @@ std::shared_ptr<TypeNode> ASTBuilder::buildArrayType(std::shared_ptr<TreeNode> n
             indexType = buildRangeType(child);
         } 
         else if (child->type == NodeType::Ident) {
-            indexType = std::make_shared<SimpleTypeNode>(child->value); 
+            indexType = setSourceLocation(std::make_shared<SimpleTypeNode>(child->value), child); 
         }
         else if (child->type == NodeType::Type) {
             elementType = buildType(child); 
         }
     }
 
-    return std::make_shared<ArrayTypeNode>(indexType, elementType);
+    return setSourceLocation(std::make_shared<ArrayTypeNode>(indexType, elementType), node);
 }
 
 std::shared_ptr<TypeNode> ASTBuilder::buildRangeType(std::shared_ptr<TreeNode> node) {
@@ -334,13 +334,13 @@ std::shared_ptr<TypeNode> ASTBuilder::buildRangeType(std::shared_ptr<TreeNode> n
         }
     }
     if (bounds.size() == 2) {
-        return std::make_shared<RangeTypeNode>(bounds[0], bounds[1]);
+        return setSourceLocation(std::make_shared<RangeTypeNode>(bounds[0], bounds[1]), node);
     }
     return nullptr;
 }
 
 std::shared_ptr<TypeNode> ASTBuilder::buildEnumeratedType(std::shared_ptr<TreeNode> node) {
-    auto enumNode = std::make_shared<EnumeratedTypeNode>();
+    auto enumNode = setSourceLocation(std::make_shared<EnumeratedTypeNode>(), node);
 
     for (const auto& child : node->children) {
         if (child->type == NodeType::Ident) {
@@ -372,7 +372,7 @@ std::shared_ptr<ExpressionNode> ASTBuilder::buildExpression(std::shared_ptr<Tree
         }
 
         if (left && right && !op.empty()) {
-            return std::make_shared<BinaryOpNode>(op, left, right);
+            return setSourceLocation(std::make_shared<BinaryOpNode>(op, left, right), node);
         }
         return left; 
     }
@@ -392,9 +392,9 @@ std::shared_ptr<ExpressionNode> ASTBuilder::buildExpression(std::shared_ptr<Tree
                 
                 if (!expr) {
                     expr = termNode;
-                    if (isNegative) expr = std::make_shared<UnaryOpNode>("-", expr);
+                    if (isNegative) expr = setSourceLocation(std::make_shared<UnaryOpNode>("-", expr), child);
                 } else {
-                    expr = std::make_shared<BinaryOpNode>(currentOp, expr, termNode);
+                    expr = setSourceLocation(std::make_shared<BinaryOpNode>(currentOp, expr, termNode), child);
                 }
             }
             else if (child->type == NodeType::AdditiveOperator) {
@@ -415,7 +415,7 @@ std::shared_ptr<ExpressionNode> ASTBuilder::buildExpression(std::shared_ptr<Tree
                 if (!expr) {
                     expr = factorNode;
                 } else {
-                    expr = std::make_shared<BinaryOpNode>(currentOp, expr, factorNode);
+                    expr = setSourceLocation(std::make_shared<BinaryOpNode>(currentOp, expr, factorNode), child);
                 }
             }
             else if (child->type == NodeType::MultiplicativeOperator) {
@@ -434,20 +434,20 @@ std::shared_ptr<ExpressionNode> ASTBuilder::buildExpression(std::shared_ptr<Tree
             }
             else if (child->type == NodeType::Expression) {
                 auto expr = buildExpression(child);
-                return unaryOp.empty() ? expr : std::make_shared<UnaryOpNode>(unaryOp, expr);
+                return unaryOp.empty() ? expr : setSourceLocation(std::make_shared<UnaryOpNode>(unaryOp, expr), node);
             }
             else if (child->type == NodeType::IntCon || child->type == NodeType::RealCon || 
                      child->type == NodeType::CharCon || child->type == NodeType::String) {
                 auto expr = buildLiteral(child);
-                return unaryOp.empty() ? expr : std::make_shared<UnaryOpNode>(unaryOp, expr);
+                return unaryOp.empty() ? expr : setSourceLocation(std::make_shared<UnaryOpNode>(unaryOp, expr), node);
             }
             else if (child->type == NodeType::Variable) {
                 auto expr = buildVariableAccess(child);
-                return unaryOp.empty() ? expr : std::make_shared<UnaryOpNode>(unaryOp, expr);
+                return unaryOp.empty() ? expr : setSourceLocation(std::make_shared<UnaryOpNode>(unaryOp, expr), node);
             }
             else if (child->type == NodeType::ProcedureCall) {
                 auto expr = buildFunctionCall(child);
-                return unaryOp.empty() ? expr : std::make_shared<UnaryOpNode>(unaryOp, expr);
+                return unaryOp.empty() ? expr : setSourceLocation(std::make_shared<UnaryOpNode>(unaryOp, expr), node);
             }
         }
     }
@@ -463,7 +463,7 @@ std::shared_ptr<ExpressionNode> ASTBuilder::buildVariableAccess(std::shared_ptr<
     for (const auto& child : node->children) {
         
         if (child->type == NodeType::Ident) {
-            currentAccess = std::make_shared<VarAccessNode>(child->value);
+            currentAccess = setSourceLocation(std::make_shared<VarAccessNode>(child->value), child);
         } 
         
         else if (child->type == NodeType::ComponentVariable && currentAccess != nullptr) {
@@ -493,19 +493,19 @@ std::shared_ptr<ExpressionNode> ASTBuilder::buildVariableAccess(std::shared_ptr<
                     std::shared_ptr<ExpressionNode> singleIndex = nullptr;
                     
                     if (idxChild->type == NodeType::Ident) {
-                        singleIndex = std::make_shared<VarAccessNode>(idxChild->value);
+                        singleIndex = setSourceLocation(std::make_shared<VarAccessNode>(idxChild->value), idxChild);
                     } 
                     else if (idxChild->type == NodeType::IntCon || idxChild->type == NodeType::CharCon) {
                         singleIndex = buildLiteral(idxChild);
                     }
                     if (singleIndex) {
-                        currentAccess = std::make_shared<ArrayAccessNode>(currentAccess, singleIndex);
+                        currentAccess = setSourceLocation(std::make_shared<ArrayAccessNode>(currentAccess, singleIndex), child);
                     }
                 }
             }
             
             else if (isRecordAccess && !fieldName.empty()) {
-                currentAccess = std::make_shared<FieldAccessNode>(currentAccess, fieldName);
+                currentAccess = setSourceLocation(std::make_shared<FieldAccessNode>(currentAccess, fieldName), child);
             }
         }
     }
@@ -544,7 +544,7 @@ std::shared_ptr<ExpressionNode> ASTBuilder::buildFunctionCall(std::shared_ptr<Tr
         return nullptr;
     }
 
-    auto callNode = std::make_shared<FunctionCallNode>(funcName);
+    auto callNode = setSourceLocation(std::make_shared<FunctionCallNode>(funcName), node);
     callNode->args = args;
     return callNode;
 }
@@ -577,24 +577,24 @@ std::shared_ptr<ExpressionNode> ASTBuilder::buildLiteral(std::shared_ptr<TreeNod
     std::shared_ptr<ExpressionNode> literalNode = nullptr;
 
     if (targetNode->type == NodeType::IntCon) {
-        literalNode = std::make_shared<IntegerLiteralNode>(std::stoi(targetNode->value));
+        literalNode = setSourceLocation(std::make_shared<IntegerLiteralNode>(std::stoi(targetNode->value)), targetNode);
     } 
     else if (targetNode->type == NodeType::RealCon) {
-        literalNode = std::make_shared<RealLiteralNode>(std::stod(targetNode->value));
+        literalNode = setSourceLocation(std::make_shared<RealLiteralNode>(std::stod(targetNode->value)), targetNode);
     }
     else if (targetNode->type == NodeType::String) {
-        literalNode = std::make_shared<StringLiteralNode>(targetNode->value);
+        literalNode = setSourceLocation(std::make_shared<StringLiteralNode>(targetNode->value), targetNode);
     }
     else if (targetNode->type == NodeType::CharCon) {
         char charVal = targetNode->value.empty() ? '\0' : targetNode->value[0]; 
-        literalNode = std::make_shared<CharLiteralNode>(charVal);
+        literalNode = setSourceLocation(std::make_shared<CharLiteralNode>(charVal), targetNode);
     }
     else if (targetNode->type == NodeType::Ident) {
-        literalNode = std::make_shared<VarAccessNode>(targetNode->value);
+        literalNode = setSourceLocation(std::make_shared<VarAccessNode>(targetNode->value), targetNode);
     }
 
     if (hasSign && literalNode != nullptr) {
-        return std::make_shared<UnaryOpNode>(signOp, literalNode);
+        return setSourceLocation(std::make_shared<UnaryOpNode>(signOp, literalNode), node);
     }
 
     return literalNode;
@@ -638,7 +638,7 @@ std::shared_ptr<StatementNode> ASTBuilder::buildStatement(std::shared_ptr<TreeNo
     return nullptr;
 }
 std::shared_ptr<CompoundStatementNode> ASTBuilder::buildCompoundStatement(std::shared_ptr<TreeNode> node) {
-    auto compoundNode = std::make_shared<CompoundStatementNode>();
+    auto compoundNode = setSourceLocation(std::make_shared<CompoundStatementNode>(), node);
     if (!node) return compoundNode;
     for (const auto& child : node->children) {
         if (child->type == NodeType::StatementList) {
@@ -671,7 +671,7 @@ std::shared_ptr<AssignmentStatementNode> ASTBuilder::buildAssignmentStatement(st
         }
     }
 
-    return std::make_shared<AssignmentStatementNode>(targetVar, valueExpr);
+    return setSourceLocation(std::make_shared<AssignmentStatementNode>(targetVar, valueExpr), node);
 }
 
 std::shared_ptr<IfStatementNode> ASTBuilder::buildIfStatement(std::shared_ptr<TreeNode> node) {
@@ -696,7 +696,7 @@ std::shared_ptr<IfStatementNode> ASTBuilder::buildIfStatement(std::shared_ptr<Tr
             }
         }
     }
-    return std::make_shared<IfStatementNode>(condition, thenBranch, elseBranch);
+    return setSourceLocation(std::make_shared<IfStatementNode>(condition, thenBranch, elseBranch), node);
 }
 
 std::shared_ptr<CaseStatementNode> ASTBuilder::buildCaseStatement(std::shared_ptr<TreeNode> node) {
@@ -716,7 +716,7 @@ std::shared_ptr<CaseStatementNode> ASTBuilder::buildCaseStatement(std::shared_pt
     }
 
     // Buat node AST-nya
-    auto caseStmtNode = std::make_shared<CaseStatementNode>(caseExpr);
+    auto caseStmtNode = setSourceLocation(std::make_shared<CaseStatementNode>(caseExpr), node);
     size_t i = 0;
     while (i < caseBlocksQueue.size()) {
         auto currentBlock = caseBlocksQueue[i++];
@@ -759,7 +759,7 @@ std::shared_ptr<WhileLoopNode> ASTBuilder::buildWhileLoop(std::shared_ptr<TreeNo
         }
     }
 
-    return std::make_shared<WhileLoopNode>(condition, body);
+    return setSourceLocation(std::make_shared<WhileLoopNode>(condition, body), node);
 }
 
 std::shared_ptr<ForLoopNode> ASTBuilder::buildForLoop(std::shared_ptr<TreeNode> node) {
@@ -796,7 +796,7 @@ std::shared_ptr<ForLoopNode> ASTBuilder::buildForLoop(std::shared_ptr<TreeNode> 
             body = buildStatement(child);
         }
     }
-    return std::make_shared<ForLoopNode>(counterVar, startValue, endValue, isDownTo, body);
+    return setSourceLocation(std::make_shared<ForLoopNode>(counterVar, startValue, endValue, isDownTo, body), node);
 }
 
 std::shared_ptr<RepeatUntilNode> ASTBuilder::buildRepeatUntil(std::shared_ptr<TreeNode> node) {
@@ -821,7 +821,7 @@ std::shared_ptr<RepeatUntilNode> ASTBuilder::buildRepeatUntil(std::shared_ptr<Tr
         }
     }
 
-    auto repeatNode = std::make_shared<RepeatUntilNode>(condition);
+    auto repeatNode = setSourceLocation(std::make_shared<RepeatUntilNode>(condition), node);
     
     repeatNode->body = std::move(bodyStatements);
 
@@ -858,7 +858,7 @@ std::shared_ptr<ProcedureCallNode> ASTBuilder::buildProcedureCall(std::shared_pt
         return nullptr;
     }
 
-    auto callNode = std::make_shared<ProcedureCallNode>(procName);
+    auto callNode = setSourceLocation(std::make_shared<ProcedureCallNode>(procName), node);
     callNode->args = args;
     return callNode;
 }

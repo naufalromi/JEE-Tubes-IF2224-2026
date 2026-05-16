@@ -5,6 +5,7 @@
 #include "syntax/Parser.hpp"
 #include "semantic/ASTBuilder.hpp"
 #include "semantic/ASTPrinter.hpp"
+#include "semantic/SemanticAnalyzer.hpp"
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -32,7 +33,7 @@ int main()
             inputPath = "test/lexer/" + std::to_string(filenum) + ".arion";
         } 
         else if (typeChoice == 2) {
-            inputPath = "test/semantic/" + std::to_string(filenum) + ".arion";
+            inputPath = "test/lexer/" + std::to_string(filenum) + ".arion";
         } 
         else if (typeChoice == 3) {
             inputPath = "test/parser/" + std::to_string(filenum) + ".arion";
@@ -88,17 +89,54 @@ int main()
             }
 
             if (typeChoice == 3) {
-                ASTBuilder builder(parseTree);
+                SemanticAnalyzer analyzer(parseTree);
                 
-                std::shared_ptr<ProgramNode> ast = builder.build();
+                // Run semantic analysis pipeline: ParseTree → AST → Decorated AST
+                std::shared_ptr<ProgramNode> decoratedAST = analyzer.analyse();
 
-                if (ast) {
-                    std::cout << "AST berhasil dibuat! Berikut strukturnya:\n\n";
-                    ASTPrinter printer;
-                    printer.print(ast);
-                } else {
-                    std::cout << "Gagal membangun AST!\n";
+                if (!decoratedAST) {
+                    std::cout << "[!] Semantic analysis failed!\n";
+                    return 1;
                 }
+
+                if (analyzer.hasErrors()) {
+                    std::cout << "[!] Semantic analysis completed with errors.\n\n";
+                }
+
+                // Display semantic information
+                int displayChoice;
+                std::cout << "\n========== DISPLAY OPTIONS ==========\n";
+                std::cout << "1. Decorated AST only\n";
+                std::cout << "2. Symbol Table (tab) only\n";
+                std::cout << "3. Array Table (atab) only\n";
+                std::cout << "4. Block Table (btab) only\n";
+                std::cout << "5. All semantic information\n";
+                std::cout << "6. Exit\n";
+                std::cout << "Choose: ";
+                std::cin >> displayChoice;
+
+                switch (displayChoice) {
+                    case 1:
+                        analyzer.printDecoratedAST();
+                        break;
+                    case 2:
+                        analyzer.printSymbolTable();
+                        break;
+                    case 3:
+                        analyzer.printArrayTable();
+                        break;
+                    case 4:
+                        analyzer.printBlockTable();
+                        break;
+                    case 5:
+                        analyzer.printAllSemanticInfo();
+                        break;
+                    case 6:
+                        break;
+                    default:
+                        std::cout << "Invalid choice\n";
+                }
+
                 return 0;
             }
 

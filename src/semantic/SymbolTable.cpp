@@ -1,10 +1,11 @@
 #include "SymbolTable.hpp"
+#include <iostream>
 #include <string>
 
 void SymbolTable::initPredefined()
 {
     // index 0 : nullpointer untuk 'NULL';
-    tab[0] = {"", 0, ObjectType::TYPE, DataType::UNKNOWN, 0, 0, 0, 0};
+    tab[0] = {"NULL", 0, ObjectType::TYPE, DataType::UNKNOWN, 0, 0, 0, 0};
     //       identifier, link, obj,           type,    ref, nrm,  level, address.
     tab[1] = {"INTEGER", 0, ObjectType::TYPE, DataType::INTEGER, 0, 1, 0, 4}; // size 4 byte
     tab[2] = {"REAL", 1, ObjectType::TYPE, DataType::REAL, 0, 1, 0, 8};       // size 8 byte
@@ -30,7 +31,15 @@ void SymbolTable::initPredefined()
         i++;
     }
 
+    // Set btab[0].last to point to the last reserved word FIRST
     btab[0].last = currentLink;
+    
+    // Now add predefined I/O procedures at level 0 (global)
+    // enter() will use btab[0].last + 1 to find the next index
+    enter("writeln", ObjectType::PROCEDURE, DataType::VOID, 0);
+    enter("write", ObjectType::PROCEDURE, DataType::VOID, 0);
+    enter("read", ObjectType::PROCEDURE, DataType::VOID, 0);
+    enter("readln", ObjectType::PROCEDURE, DataType::VOID, 0);
 };
 
 int SymbolTable::lookup(std::string name, int lastIndex)
@@ -43,14 +52,15 @@ int SymbolTable::lookup(std::string name, int lastIndex)
     return 0;
 }
 
-int SymbolTable::enter(std::string name, ObjectType kind, DataType type, int lev) {
-    // Cari indeks kosong berikutnya. 
+int SymbolTable::enter(std::string name, ObjectType kind, DataType type, int lev)
+{
+    // Cari indeks kosong berikutnya.
     // Kita cek berdasarkan data terakhir yang masuk di blok (scope) saat ini.
-    int index = btab.back().last + 1; 
+    int index = btab.back().last + 1;
 
     // Jika kapasitas tabel hampir penuh, perbesar ukurannya
     if (index >= (int)tab.size()) {
-        tab.resize(tab.size() + 20); 
+        tab.resize(tab.size() + 20);
     }
 
     // Masukkan data ke dalam tabel
@@ -58,9 +68,9 @@ int SymbolTable::enter(std::string name, ObjectType kind, DataType type, int lev
     tab[index].obj = kind;
     tab[index].type = type;
     tab[index].lev = lev;
-    
+
     // Hubungkan dengan identifier sebelumnya (Linked-List gaya tabel)
-    tab[index].link = btab.back().last; 
+    tab[index].link = btab.back().last;
 
     // Update penunjuk 'terakhir' di blok (scope) saat ini
     btab.back().last = index;

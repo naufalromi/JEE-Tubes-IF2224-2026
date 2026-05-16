@@ -28,6 +28,9 @@ public:
     int scopeLevel = -1;
     std::vector<std::string> semanticErrors;
 
+    int line;
+    int column;
+
     ASTNode(ASTNodeType t) : nodeType(t) {}
     virtual ~ASTNode() = default;
     virtual void accept(ASTVisitor* visitor) = 0;

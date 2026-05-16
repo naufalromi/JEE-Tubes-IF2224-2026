@@ -45,6 +45,16 @@ private:
     std::shared_ptr<RepeatUntilNode> buildRepeatUntil(std::shared_ptr<TreeNode> node);
     std::shared_ptr<ProcedureCallNode> buildProcedureCall(std::shared_ptr<TreeNode> node);
 
+    // Helper to set source location (line & column) from TreeNode to ASTNode
+    template<typename T>
+    std::shared_ptr<T> setSourceLocation(std::shared_ptr<T> astNode, std::shared_ptr<TreeNode> sourceNode) {
+        if (astNode && sourceNode) {
+            astNode->line = sourceNode->line;
+            astNode->column = sourceNode->column;
+        }
+        return astNode;
+    }
+
 public:
     ASTBuilder(std::shared_ptr<TreeNode> root) : parseTreeRoot(root) {}
 
