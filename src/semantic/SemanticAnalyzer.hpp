@@ -57,7 +57,6 @@ public:
     DataType visitRecordType(std::shared_ptr<TreeNode> node);
     
     void visitRange(std::shared_ptr<TreeNode> node);
-    
     void visitFieldList(std::shared_ptr<TreeNode> node);
     void visitFieldPart(std::shared_ptr<TreeNode> node);
 
@@ -119,9 +118,10 @@ public:
 
     
     
-
+    bool isTypeCompatible(DataType target, DataType source);
     bool checkFlowLogic(std::shared_ptr<ASTNode> root);
     void showErrors();
+    void printAST(std::shared_ptr<ASTNode> node, std::string prefix = "", bool isLeft = true, bool isRoot = true);
     ~SemanticAnalyzer();
 };
 

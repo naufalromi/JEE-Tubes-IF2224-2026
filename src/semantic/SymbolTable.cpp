@@ -42,3 +42,30 @@ int SymbolTable::lookup(std::string name, int lastIndex)
     }
     return 0;
 }
+
+int SymbolTable::enter(std::string name, ObjectType kind, DataType type, int lev) {
+    // Cari indeks kosong berikutnya. 
+    // Kita cek berdasarkan data terakhir yang masuk di blok (scope) saat ini.
+    int index = btab.back().last + 1; 
+
+    // Jika kapasitas tabel hampir penuh, perbesar ukurannya
+    if (index >= (int)tab.size()) {
+        tab.resize(tab.size() + 20); 
+    }
+
+    // Masukkan data ke dalam tabel
+    tab[index].name = name;
+    tab[index].obj = kind;
+    tab[index].type = type;
+    tab[index].lev = lev;
+    
+    // Hubungkan dengan identifier sebelumnya (Linked-List gaya tabel)
+    tab[index].link = btab.back().last; 
+
+    // Update penunjuk 'terakhir' di blok (scope) saat ini
+    btab.back().last = index;
+
+    return index;
+}
+
+SymbolTable::~SymbolTable() = default;

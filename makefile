@@ -12,6 +12,7 @@ SRCS = $(SRC_DIR)/main.cpp\
 	   $(wildcard $(SRC_DIR)/common/*.cpp)\
 	   $(wildcard $(SRC_DIR)/lexer/*.cpp)\
 	   $(wildcard $(SRC_DIR)/syntax/*.cpp)\
+	   $(wildcard $(SRC_DIR)/semantic/*.cpp)
 
 # Menentuka file Object (.o)
 # Mengubah path src/xxx/file.cpp menjadi build/xxx/file.o

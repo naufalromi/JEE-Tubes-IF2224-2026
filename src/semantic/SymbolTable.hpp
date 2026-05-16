@@ -39,14 +39,13 @@ public:
     std::vector<AtabEntry> atab;
     std::vector<BtabEntry> btab;
 
-    SymbolTable(){
-        tab.resize(33);
-        
-    }
     int enter(std::string name, ObjectType kind, DataType type, int lev);
     int lookup(std::string name, int lastIndex);
-    SymbolTable(){
+    
+    SymbolTable() {
         tab.resize(33);
+        atab.resize(1);
+        btab.resize(1);
         initPredefined();
     }
     

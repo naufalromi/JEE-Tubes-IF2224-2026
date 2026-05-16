@@ -1,0 +1,44 @@
+program Statement;
+
+var
+    a : Integer;
+
+begin
+  batas := 10;
+
+  c := a div b + a mod b * 5 - (a + 2) * (b - 1);
+
+  if ( mod 2 == 0) then
+    writeln('Genap')
+  else
+    writeln('Ganjil');
+
+  Tukar(10, 20, 'X');
+  hasil := Faktorial(5);
+
+  for i := 1 to batas do
+  begin
+    akumulasi := akumulasi + i;
+  end;
+
+  while akumulasi < 100 do
+  begin
+    akumulasi := akumulasi + 15;
+    batas := batas - 1;
+  end;
+
+  repeat
+    batas := batas - 1;
+  until batas == 0;
+
+  case pilihan of
+    'A': level := 100;
+    'B': level := 50;
+    'C': level := 10
+  end;
+
+  kelas[1].nama := 'Budi';
+  kelas[1].umur := 16;
+  kelas[1].nilai[1] := 85;
+
+end.

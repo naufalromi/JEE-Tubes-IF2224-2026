@@ -1,0 +1,28 @@
+program TestTiga;
+
+type
+  DataSiswa == record
+    nomorInduk: integer;
+    kodeKelas: char;
+    nilaiAkhir: real;
+  end;
+
+var
+  siswa: DataSiswa;
+  i, batas, akumulasi: integer;
+
+begin
+  batas := 10;
+  akumulasi := 0;
+
+  for i := 1 to batas do
+  begin
+    akumulasi := akumulasi + i;
+  end;
+
+  while akumulasi < 100 do
+  begin
+    akumulasi := akumulasi + 15;
+    batas := batas - 1;
+  end;
+end.
