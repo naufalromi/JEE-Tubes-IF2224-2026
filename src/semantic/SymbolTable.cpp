@@ -4,6 +4,8 @@
 
 void SymbolTable::initPredefined()
 {
+    currentBlock = 0; 
+    tabTop = 0;
     // index 0 : nullpointer untuk 'NULL';
     tab[0] = {"NULL", 0, ObjectType::TYPE, DataType::UNKNOWN, 0, 0, 0, 0};
     //       identifier, link, obj,           type,    ref, nrm,  level, address.
@@ -22,7 +24,7 @@ void SymbolTable::initPredefined()
     int currentLink = 5;
     int i = 6;
     for (const std::string &word : reserveWord) {
-        if (i >= 33) break;
+        if (i >= (int)tab.size()) tab.resize(tab.size() + 20);
         tab[i].name = word;
         tab[i].obj = ObjectType::RESERVE;
         tab[i].type = DataType::VOID;
@@ -32,7 +34,8 @@ void SymbolTable::initPredefined()
     }
 
     // Set btab[0].last to point to the last reserved word FIRST
-    btab[0].last = currentLink;
+    tabTop = i - 1;
+    btab[0].last = tabTop;
     
     // Now add predefined I/O procedures at level 0 (global)
     // enter() will use btab[0].last + 1 to find the next index
@@ -58,8 +61,8 @@ int SymbolTable::lookup(std::string name, int lastIndex)
 int SymbolTable::enter(std::string name, ObjectType kind, DataType type, int lev)
 {
     // Cari indeks kosong berikutnya.
-    // Kita cek berdasarkan data terakhir yang masuk di blok (scope) saat ini.
-    int index = btab.back().last + 1;
+    tabTop++;
+    int index = tabTop;
 
     // Jika kapasitas tabel hampir penuh, perbesar ukurannya
     if (index >= (int)tab.size()) {
@@ -72,11 +75,8 @@ int SymbolTable::enter(std::string name, ObjectType kind, DataType type, int lev
     tab[index].type = type;
     tab[index].lev = lev;
 
-    // Hubungkan dengan identifier sebelumnya (Linked-List gaya tabel)
-    tab[index].link = btab.back().last;
-
-    // Update penunjuk 'terakhir' di blok (scope) saat ini
-    btab.back().last = index;
+    tab[index].link = btab[currentBlock].last;
+    btab[currentBlock].last = index;
 
     return index;
 }

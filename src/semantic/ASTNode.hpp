@@ -42,6 +42,7 @@ public:
 class TypeNode : public ASTNode {
 public:
     DataType resolvedType = DataType::UNKNOWN;
+    int resolvedRef = 0;
     TypeNode(ASTNodeType t) : ASTNode(t) {}
 };
 
@@ -59,6 +60,7 @@ class ArrayTypeNode : public TypeNode {
 public:
     std::shared_ptr<TypeNode> indexType;
     std::shared_ptr<TypeNode> elementType; 
+    int atabRef = 0;
 
     ArrayTypeNode(std::shared_ptr<TypeNode> idxType, std::shared_ptr<TypeNode> elemType)
         : TypeNode(ASTNodeType::ArrayType), indexType(idxType), elementType(elemType) {}
@@ -70,6 +72,7 @@ public:
 class RecordTypeNode : public TypeNode {
 public:
     std::vector<std::shared_ptr<VarDeclarationNode>> fields;
+    int btabRef = 0;
 
     RecordTypeNode() : TypeNode(ASTNodeType::RecordType) {}
     void accept(ASTVisitor* visitor) override { visitor->visit(this); }
@@ -88,6 +91,8 @@ class RangeTypeNode : public TypeNode {
 public:
     std::shared_ptr<ExpressionNode> lowBound;
     std::shared_ptr<ExpressionNode> highBound;
+    DataType baseType = DataType::UNKNOWN;
+
     RangeTypeNode(std::shared_ptr<ExpressionNode> low, std::shared_ptr<ExpressionNode> high) 
         : TypeNode(ASTNodeType::RangeType), lowBound(low), highBound(high) {}
     void accept(ASTVisitor* visitor) override { visitor->visit(this); }
@@ -171,8 +176,8 @@ public:
  */
 class ExpressionNode : public ASTNode {
 public:
-    // Semantic Analyzer akan mengisi ini nanti)
     DataType evaluatedType = DataType::UNKNOWN;
+    int evaluatedRef = 0;
 
     ExpressionNode(ASTNodeType t) : ASTNode(t) {}
 };

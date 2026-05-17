@@ -14,37 +14,38 @@ void SemanticVisitor::reportError(ASTNode *node, const std::string &message)
 void SemanticVisitor::visit(ProgramNode *node)
 {
     currentLevel = 0;
+    symbolTable.currentBlock = 0;
+    int globalBlockStart = symbolTable.btab[0].last;
 
-    // Create or initialize btab[0] for global program block
-    int globalBlockStart = symbolTable.btab.back().last;
-
-    // Process Declaration
+    // Proses semua deklarasi (termasuk variabel, tipe, prosedur, dan fungsi)
     for (auto &decl : node->declarations) {
         decl->accept(this);
     }
 
-    // Calculate variable count for global block (vsze)
-    int globalBlockEnd = symbolTable.btab.back().last;
-    int varCount = 0;
-    // Count variables in global scope (skip reserved words and types)
-    for (int i = globalBlockStart + 1; i <= globalBlockEnd; i++) {
-        if (symbolTable.tab[i].lev == 0 && symbolTable.tab[i].obj == ObjectType::VARIABLE) {
-            varCount++;
+    symbolTable.currentBlock = 0;
+
+    // Hitung ukuran memori variabel global (vsze)
+    int totalGlobalMemory = 0;
+    int curr = symbolTable.btab[0].last;
+
+    while (curr > globalBlockStart) {
+        if (symbolTable.tab[curr].lev == 0 && symbolTable.tab[curr].obj == ObjectType::VARIABLE) {
+            if (symbolTable.tab[curr].type == DataType::ARRAY) {
+                totalGlobalMemory += symbolTable.atab[symbolTable.tab[curr].ref].size;
+            } else if (symbolTable.tab[curr].type == DataType::RECORD) {
+                totalGlobalMemory += symbolTable.btab[symbolTable.tab[curr].ref].vsze;
+            } else {
+                totalGlobalMemory += getDataTypeSize(symbolTable.tab[curr].type);
+            }   
         }
+        curr = symbolTable.tab[curr].link;
     }
-    symbolTable.btab[0].vsze = varCount;
+    
+    // Simpan ukuran total memori variabel global
+    symbolTable.btab[0].vsze = totalGlobalMemory;
+    symbolTable.btab[0].psze = 0;
+    symbolTable.btab[0].lpar = 0; 
 
-    // Create block table entry for main program block (compound statement)
-    if (symbolTable.btab.size() == 1) {
-        BtabEntry mainBlock;
-        mainBlock.last = symbolTable.btab.back().last;
-        mainBlock.lpar = -1;
-        mainBlock.psze = 0;
-        mainBlock.vsze = 0;  // Main block has no local variables (they're in global scope)
-        symbolTable.btab.push_back(mainBlock);
-    }
-
-    // Process Compound Statement (main block)
     if (node->statements) {
         node->statements->accept(this);
     }
@@ -64,11 +65,11 @@ void SemanticVisitor::visit(VarDeclarationNode *node)
 
     int index = symbolTable.enter(node->name, ObjectType::VARIABLE, type, currentLevel);
 
-    if (index == -1) {
-        reportError(node, "Duplicate identifier: " + node->name);
-    }
-    else {
+    if (index != -1) {
         node->scopeLevel = currentLevel;
+        symbolTable.tab[index].ref = node->typeDefinition->resolvedRef; 
+    } else {
+        reportError(node, "Duplicate identifier: " + node->name);
     }
 }
 
@@ -89,17 +90,6 @@ void SemanticVisitor::visit(BlockNode *node)
     if (!node) return;
 
     node->scopeLevel = currentLevel;
-
-    // For main program block (level 0), create btab entry
-    if (currentLevel == 0 && symbolTable.btab.size() == 1) {
-        // This is the main block of the program
-        BtabEntry mainBlock;
-        mainBlock.last = symbolTable.btab.back().last;
-        mainBlock.lpar = -1;
-        mainBlock.psze = 0;
-        mainBlock.vsze = 0;
-        symbolTable.btab.push_back(mainBlock);
-    }
 
     // Process all declarations in this block (const, type, var, nested proc/func)
     for (auto &decl : node->declarations) {
@@ -154,105 +144,188 @@ void SemanticVisitor::visit(TypeDeclarationNode *node)
     }
     else {
         node->scopeLevel = currentLevel;
+        symbolTable.tab[index].ref = node->typeDefinition->resolvedRef;
     }
 }
 
 void SemanticVisitor::visit(ProcedureDeclarationNode *node)
 {
-    if (!node) return;
+if (!node) return;
 
-    // Enter procedure into symbol table at current level
+    // Tambahkan prosedur ke scope parent
     int procIndex = symbolTable.enter(node->name, ObjectType::PROCEDURE, DataType::UNKNOWN, currentLevel);
-
     if (procIndex == -1) {
         reportError(node, "Duplicate identifier: " + node->name);
         return;
     }
-
     node->scopeLevel = currentLevel;
 
-    // Enter new scope for procedure body
-    currentLevel++;
-
-    int initialLastIndex = procIndex;
-
+    // Siapkan Block baru untuk Prosedur
     BtabEntry procBlock;
-    procBlock.last = initialLastIndex;
+    procBlock.last = procIndex;
     procBlock.lpar = -1;
     procBlock.psze = 0;
     procBlock.vsze = 0;
     symbolTable.btab.push_back(procBlock);
 
-    for (auto &param : node->parameters) { param->accept(this); }
-    if (node->body) { node->body->accept(this); }
+    // Pindah masuk ke Scope Prosedur
+    currentLevel++;
+    int prevBlock = symbolTable.currentBlock; // Simpan alamat scope parent
+    symbolTable.currentBlock = symbolTable.btab.size() - 1; // Pindah ke block baru
 
-    int currentLastIndex = symbolTable.btab.back().last;
-    int totalLocalMemory = 0;
+    int initialLastIndex = procBlock.last;
 
-    for (int i = initialLastIndex + 1; i <= currentLastIndex; i++) {
-        if (symbolTable.tab[i].obj == ObjectType::VARIABLE) {
-            totalLocalMemory += getDataTypeSize(symbolTable.tab[i].type);
-        }
+    // Visit Parameter
+    for (auto &param : node->parameters) { 
+        param->accept(this); 
     }
 
-    node->localVariablesSize = totalLocalMemory;
-    symbolTable.btab.back().vsze = totalLocalMemory;
+    // Hitung Parameter Metrics (lpar & psze)
+    int paramLastIndex = symbolTable.btab[symbolTable.currentBlock].last;
+    int totalParamMemory = 0;
+    int currParam = paramLastIndex;
 
-    // Exit scope
-    symbolTable.btab.pop_back();
+    while (currParam > initialLastIndex) {
+        if (symbolTable.tab[currParam].obj == ObjectType::VARIABLE) {
+            if (symbolTable.tab[currParam].type == DataType::ARRAY) {
+                int arrayRef = symbolTable.tab[currParam].ref;
+                totalParamMemory += symbolTable.atab[arrayRef].size;
+            } else if (symbolTable.tab[currParam].type == DataType::RECORD) {
+                int recordRef = symbolTable.tab[currParam].ref;
+                totalParamMemory += symbolTable.btab[recordRef].vsze;
+            } else {
+                totalParamMemory += getDataTypeSize(symbolTable.tab[currParam].type);
+            }
+        }
+        currParam = symbolTable.tab[currParam].link;
+    }
+    symbolTable.btab[symbolTable.currentBlock].lpar = paramLastIndex;
+    symbolTable.btab[symbolTable.currentBlock].psze = totalParamMemory;
+
+    // Visit Body (Variables & Statements)
+    if (node->body) { 
+        node->body->accept(this); 
+    }
+
+    // Hitung Local Variables Metrics (vsze)
+    int finalLastIndex = symbolTable.btab[symbolTable.currentBlock].last;
+    int totalLocalMemory = 0;
+    int currLocal = finalLastIndex;
+
+    while (currLocal > paramLastIndex) {
+        if (symbolTable.tab[currLocal].obj == ObjectType::VARIABLE) {
+            if (symbolTable.tab[currLocal].type == DataType::ARRAY) {
+                int arrayRef = symbolTable.tab[currLocal].ref;
+                totalLocalMemory += symbolTable.atab[arrayRef].size;
+            } else if (symbolTable.tab[currLocal].type == DataType::RECORD) {
+                int recordRef = symbolTable.tab[currLocal].ref;
+                totalLocalMemory += symbolTable.btab[recordRef].vsze;
+            } else {
+                totalLocalMemory += getDataTypeSize(symbolTable.tab[currLocal].type);
+            }
+        }
+        currLocal = symbolTable.tab[currLocal].link;
+    }
+    node->localVariablesSize = totalLocalMemory;
+    symbolTable.btab[symbolTable.currentBlock].vsze = totalLocalMemory;
+
+    // Keluar dari Scope Prosedur
+    symbolTable.currentBlock = prevBlock;
     currentLevel--;
 }
 
 void SemanticVisitor::visit(FunctionDeclarationNode *node)
 {
-    if (!node) return;
+if (!node) return;
 
     node->returnType->accept(this);
     DataType returnType = node->returnType->resolvedType;
+    
+    // Tambahkan fungsi ke scope parent
     int funcIndex = symbolTable.enter(node->name, ObjectType::FUNCTION, returnType, currentLevel);
-
     if (funcIndex == -1) {
         reportError(node, "Duplicate identifier: " + node->name);
         return;
     }
-
     node->scopeLevel = currentLevel;
-    currentLevel++;
 
-    int initialLastIndex = funcIndex; 
-
+    // Siapkan block baru untuk Fungsi
     BtabEntry funcBlock;
-    funcBlock.last = initialLastIndex;
+    funcBlock.last = funcIndex;
     funcBlock.lpar = -1;
     funcBlock.psze = 0;
     funcBlock.vsze = 0;
     symbolTable.btab.push_back(funcBlock);
 
-    // Register function name as a variable
+    // Pindah masuk ke Scope Fungsi
+    currentLevel++;
+    int prevBlock = symbolTable.currentBlock;
+    symbolTable.currentBlock = symbolTable.btab.size() - 1;
+
+    // Register function name sebagai local variable
     int nameIndex = symbolTable.enter(node->name, ObjectType::VARIABLE, returnType, currentLevel);
     if (nameIndex == -1) {
         reportError(node, "Failed to register function name in local scope: " + node->name);
     }
 
-    for (auto &param : node->parameters) { param->accept(this); }
-    if (node->body) { node->body->accept(this); }
+    int initialLastIndex = symbolTable.btab[symbolTable.currentBlock].last;
 
-    int currentLastIndex = symbolTable.btab.back().last;
-    int totalLocalMemory = 0;
-
-    // Scan all entry
-    for (int i = initialLastIndex + 1; i <= currentLastIndex; i++) {
-        if (symbolTable.tab[i].obj == ObjectType::VARIABLE) {
-            totalLocalMemory += getDataTypeSize(symbolTable.tab[i].type);
-        }
+    // Visit Parameter
+    for (auto &param : node->parameters) { 
+        param->accept(this); 
     }
-    
+
+    // Hitung Parameter Metrics
+    int paramLastIndex = symbolTable.btab[symbolTable.currentBlock].last;
+    int totalParamMemory = 0;
+    int currParam = paramLastIndex;
+
+    while (currParam > initialLastIndex) {
+        if (symbolTable.tab[currParam].obj == ObjectType::VARIABLE) {
+            if (symbolTable.tab[currParam].type == DataType::ARRAY) {
+                int arrayRef = symbolTable.tab[currParam].ref;
+                totalParamMemory += symbolTable.atab[arrayRef].size;
+            } else if (symbolTable.tab[currParam].type == DataType::RECORD) {
+                int recordRef = symbolTable.tab[currParam].ref;
+                totalParamMemory += symbolTable.btab[recordRef].vsze;
+            } else {
+                totalParamMemory += getDataTypeSize(symbolTable.tab[currParam].type);
+            }
+        }
+        currParam = symbolTable.tab[currParam].link;
+    }
+    symbolTable.btab[symbolTable.currentBlock].lpar = paramLastIndex;
+    symbolTable.btab[symbolTable.currentBlock].psze = totalParamMemory;
+
+    // Visit Body
+    if (node->body) { 
+        node->body->accept(this); 
+    }
+
+    // Hitung Local Variables Metrics
+    int finalLastIndex = symbolTable.btab[symbolTable.currentBlock].last;
+    int totalLocalMemory = 0;
+    int currLocal = finalLastIndex;
+
+    while (currLocal > paramLastIndex) {
+        if (symbolTable.tab[currLocal].obj == ObjectType::VARIABLE) {
+            if (symbolTable.tab[currLocal].type == DataType::ARRAY) {
+                int arrayRef = symbolTable.tab[currLocal].ref;
+                totalLocalMemory += symbolTable.atab[arrayRef].size;
+            } else if (symbolTable.tab[currLocal].type == DataType::RECORD) {
+                int recordRef = symbolTable.tab[currLocal].ref;
+                totalLocalMemory += symbolTable.btab[recordRef].vsze;
+            } else {
+                totalLocalMemory += getDataTypeSize(symbolTable.tab[currLocal].type);
+            }
+        }
+        currLocal = symbolTable.tab[currLocal].link;
+    }
     node->localVariablesSize = totalLocalMemory;
-    // Update vsze
-    symbolTable.btab.back().vsze = totalLocalMemory;
+    symbolTable.btab[symbolTable.currentBlock].vsze = totalLocalMemory;
 
     // Exit scope
-    symbolTable.btab.pop_back(); 
+    symbolTable.currentBlock = prevBlock;
     currentLevel--;
 }
 
@@ -284,9 +357,10 @@ void SemanticVisitor::visit(SimpleTypeNode *node)
     }
     else {
         // User-defined type - lookup in symbol table
-        int index = symbolTable.lookup(node->name, symbolTable.btab.back().last);
+        int index = symbolTable.lookup(node->name, symbolTable.btab[symbolTable.currentBlock].last);
         if (index != 0) {
             node->resolvedType = symbolTable.tab[index].type;
+            node->resolvedRef = symbolTable.tab[index].ref;
         }
         else {
             reportError(node, "Undefined type: " + node->name);
@@ -346,33 +420,14 @@ void SemanticVisitor::visit(ArrayTypeNode *node)
     if (node->elementType) {
         node->elementType->accept(this);
         elementType = node->elementType->resolvedType;
-        
-        // Check element type and calculate size accordingly
-        if (auto rangeType = std::dynamic_pointer_cast<RangeTypeNode>(node->elementType)) {
-            // Element is a range/subrange type - calculate size from base type
-            if (rangeType->lowBound) {
-                DataType elemBase = rangeType->lowBound->evaluatedType;
-                elementSize = getDataTypeSize(elemBase);
-            }
-        } else if (auto simpleType = std::dynamic_pointer_cast<SimpleTypeNode>(node->elementType)) {
-            // Element is a user-defined type - look it up in symbol table
-            int typeIndex = symbolTable.lookup(simpleType->name, symbolTable.btab.back().last);
-            if (typeIndex != 0 && symbolTable.tab[typeIndex].obj == ObjectType::TYPE) {
-                // User-defined type - store its symbol table index as reference
-                elementAtabRef = typeIndex;
-                // Estimate size for composite types
-                if (elementType == DataType::RECORD) {
-                    elementSize = 256;  // Estimated record size
-                } else {
-                    elementSize = getDataTypeSize(elementType);
-                }
-            } else {
-                elementSize = getDataTypeSize(elementType);
-            }
+        if (elementType == DataType::ARRAY) {
+            elementSize = symbolTable.atab[node->elementType->resolvedRef].size;
+        } else if (elementType == DataType::RECORD) {
+            elementSize = symbolTable.btab[node->elementType->resolvedRef].vsze;
         } else {
-            // Built-in simple types
             elementSize = getDataTypeSize(elementType);
         }
+        elementAtabRef = node->elementType->resolvedRef; 
     }
 
     // Create SINGLE atab entry for this array type
@@ -388,32 +443,66 @@ void SemanticVisitor::visit(ArrayTypeNode *node)
     // Add to array table
     symbolTable.atab.push_back(arrayEntry);
     
-    node->resolvedType = elementType;
+    node->resolvedType = DataType::ARRAY; 
+    node->resolvedRef = symbolTable.atab.size() - 1;
+    node->atabRef = symbolTable.atab.size() - 1;
 }
 
 void SemanticVisitor::visit(RecordTypeNode *node)
 {
     if (!node) return;
+    if (node->resolvedType != DataType::UNKNOWN) return;
 
-    if (node->resolvedType != DataType::UNKNOWN) {
-        return; 
-    }
+    BtabEntry recBlock;
+    recBlock.last = 0;
+    recBlock.lpar = -1;
+    recBlock.psze = 0;
+    recBlock.vsze = 0;
+    symbolTable.btab.push_back(recBlock);
 
-    // Process all fields in record
+    int prevBlock = symbolTable.currentBlock;
+    symbolTable.currentBlock = symbolTable.btab.size() - 1;
+
+    int startIdx = symbolTable.tabTop;
+
     for (auto &field : node->fields) {
-        field->accept(this);
+        if (field) field->accept(this);
+    }
+    
+    int endIdx = symbolTable.tabTop;
+
+    int totalRecordSize = 0;
+    int currField = symbolTable.btab[symbolTable.currentBlock].last;
+    while (currField > 0 && currField > startIdx) {
+        if (symbolTable.tab[currField].obj == ObjectType::VARIABLE) {
+            if (symbolTable.tab[currField].type == DataType::ARRAY) {
+                totalRecordSize += symbolTable.atab[symbolTable.tab[currField].ref].size;
+            } else if (symbolTable.tab[currField].type == DataType::RECORD) {
+                totalRecordSize += symbolTable.btab[symbolTable.tab[currField].ref].vsze;
+            } else {
+                totalRecordSize += getDataTypeSize(symbolTable.tab[currField].type);
+            }
+        }
+        currField = symbolTable.tab[currField].link;
     }
 
+    symbolTable.btab[symbolTable.currentBlock].vsze = totalRecordSize;
+    node->btabRef = symbolTable.currentBlock;
+    symbolTable.currentBlock = prevBlock;
     node->resolvedType = DataType::RECORD;
+    node->resolvedRef = symbolTable.currentBlock;
 }
 
 void SemanticVisitor::visit(EnumeratedTypeNode *node)
 {
     if (!node) return;
+    int enumValue = 0;
     for (const auto& element : node->elements) {
         int index = symbolTable.enter(element, ObjectType::CONSTANT, DataType::ENUMERATED, currentLevel);
         if (index == -1) {
             reportError(node, "Duplicate identifier in enum: " + element);
+        } else {
+            symbolTable.tab[index].adr = enumValue++; 
         }
     }
     node->resolvedType = DataType::ENUMERATED;
@@ -423,12 +512,12 @@ void SemanticVisitor::visit(RangeTypeNode *node)
 {
     if (!node) return;
 
-    DataType boundType = DataType::UNKNOWN;
+    DataType baseType = DataType::UNKNOWN;
 
     // Process bounds - just evaluate them, don't create atab entry yet
     if (node->lowBound) {
         node->lowBound->accept(this);
-        boundType = node->lowBound->evaluatedType;  // Get base type (INTEGER, CHAR, etc.)
+        baseType = node->lowBound->evaluatedType;  // Get base type (INTEGER, CHAR, etc.)
     }
 
     if (node->highBound) {
@@ -436,7 +525,7 @@ void SemanticVisitor::visit(RangeTypeNode *node)
     }
 
     // Store the base type (used by ArrayTypeNode to create atab entry)
-    // resolvedType is SUBRANGE (semantic marker), but ArrayTypeNode will extract bounds from lowBound/highBound
+    node->baseType = baseType; 
     node->resolvedType = DataType::SUBRANGE;
 }
 
@@ -477,13 +566,14 @@ void SemanticVisitor::visit(VarAccessNode *node)
     if (!node) return;
 
     // Look up variable in symbol table
-    int index = symbolTable.lookup(node->name, symbolTable.btab.back().last);
+    int index = symbolTable.lookup(node->name, symbolTable.btab[symbolTable.currentBlock].last);
     if (index == 0) {
         reportError(node, "Undefined identifier: " + node->name);
         node->evaluatedType = DataType::UNKNOWN;
     }
     else {
         node->evaluatedType = symbolTable.tab[index].type;
+        node->evaluatedRef = symbolTable.tab[index].ref;
         // Check constant
         if (symbolTable.tab[index].obj == ObjectType::CONSTANT) {
             node->isConstant = true;
@@ -493,16 +583,18 @@ void SemanticVisitor::visit(VarAccessNode *node)
 
 void SemanticVisitor::visit(ArrayAccessNode *node)
 {
-    if (!node) return;
+if (!node) return;
 
-    // Check target is array
     if (node->target) {
         node->target->accept(this);
-        // Type of array access is the element type
-        node->evaluatedType = node->target->evaluatedType;
+        node->evaluatedType = node->target->evaluatedType; 
+        
+        int atabIndex = node->target->evaluatedRef;
+        if (atabIndex != 0) {
+            node->evaluatedRef = symbolTable.atab[atabIndex].eref;
+        }
     }
 
-    // Check index is valid
     if (node->index) {
         node->index->accept(this);
         if (node->index->evaluatedType != DataType::INTEGER) {
@@ -515,21 +607,31 @@ void SemanticVisitor::visit(FieldAccessNode *node)
 {
     if (!node) return;
 
-    // Check target is record
+    // Evaluasi Target (Bisa berupa variabel 's1' atau array 'siswaBaru[1]')
     if (node->target) {
         node->target->accept(this);
         if (node->target->evaluatedType != DataType::RECORD) {
             reportError(node, "Can only access fields of record type");
+            node->evaluatedType = DataType::UNKNOWN;
+            return;
         }
     }
 
-    int index = symbolTable.lookup(node->fieldName, symbolTable.btab.back().last);
+    // Ambil referensi BTAB yang sudah dibawa target
+    int recordBtabIndex = node->target->evaluatedRef; 
+    
+    // Cari field di dalam blok spesifik record tersebut
+    int index = 0;
+    if (recordBtabIndex != 0) {
+        index = symbolTable.lookup(node->fieldName, symbolTable.btab[recordBtabIndex].last);
+    }
     
     if (index == 0) {
         reportError(node, "Undefined record field: " + node->fieldName);
         node->evaluatedType = DataType::UNKNOWN;
     } else {
         node->evaluatedType = symbolTable.tab[index].type;
+        node->evaluatedRef = symbolTable.tab[index].ref;
     }
 }
 
@@ -573,7 +675,7 @@ void SemanticVisitor::visit(FunctionCallNode *node)
 {
     if (!node) return;
 
-    int searchLimit = symbolTable.btab.back().last;
+    int searchLimit = symbolTable.btab[symbolTable.currentBlock].last;
     int index = 0;
 
     int i = searchLimit;
@@ -731,7 +833,8 @@ void SemanticVisitor::visit(ForLoopNode *node)
     if (!node) return;
 
     // Look up counter variable
-    int index = symbolTable.lookup(node->counterVar, symbolTable.btab.back().last);
+    int index = symbolTable.lookup(node->counterVar, symbolTable.btab[symbolTable.currentBlock].last);
+
     if (index == 0) {
         reportError(node, "Undefined loop variable: " + node->counterVar);
     }
@@ -789,7 +892,7 @@ void SemanticVisitor::visit(ProcedureCallNode *node)
 {
     if (!node) return;
 
-    int searchLimit = symbolTable.btab.back().last;
+    int searchLimit = symbolTable.btab[symbolTable.currentBlock].last;
     int index = 0;
 
     int i = searchLimit;

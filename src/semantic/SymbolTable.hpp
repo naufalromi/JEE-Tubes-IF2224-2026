@@ -39,6 +39,9 @@ public:
     std::vector<AtabEntry> atab;
     std::vector<BtabEntry> btab;
 
+    int tabTop = 0;
+    int currentBlock = 0;
+
     int enter(std::string name, ObjectType kind, DataType type, int lev);
     int lookup(std::string name, int lastIndex);
     
