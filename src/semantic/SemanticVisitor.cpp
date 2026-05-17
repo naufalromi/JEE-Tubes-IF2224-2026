@@ -15,6 +15,7 @@ void SemanticVisitor::visit(ProgramNode *node)
 {
     currentLevel = 0;
     symbolTable.currentBlock = 0;
+    currentVisibilityBlock = 0;
     int globalBlockStart = symbolTable.btab[0].last;
 
     // Proses semua deklarasi (termasuk variabel, tipe, prosedur, dan fungsi)
@@ -23,6 +24,7 @@ void SemanticVisitor::visit(ProgramNode *node)
     }
 
     symbolTable.currentBlock = 0;
+    currentVisibilityBlock = 0;
 
     // Hitung ukuran memori variabel global (vsze)
     int totalGlobalMemory = 0;
@@ -120,6 +122,9 @@ void SemanticVisitor::visit(ConstDeclarationNode *node)
     }
     else {
         node->scopeLevel = currentLevel;
+        if (auto intLit = std::dynamic_pointer_cast<IntegerLiteralNode>(node->value)) {
+            symbolTable.tab[index].adr = intLit->value;
+        }
     }
 }
 
@@ -150,7 +155,7 @@ void SemanticVisitor::visit(TypeDeclarationNode *node)
 
 void SemanticVisitor::visit(ProcedureDeclarationNode *node)
 {
-if (!node) return;
+    if (!node) return;
 
     // Tambahkan prosedur ke scope parent
     int procIndex = symbolTable.enter(node->name, ObjectType::PROCEDURE, DataType::UNKNOWN, currentLevel);
@@ -171,7 +176,10 @@ if (!node) return;
     // Pindah masuk ke Scope Prosedur
     currentLevel++;
     int prevBlock = symbolTable.currentBlock; // Simpan alamat scope parent
+    int prevVisibility = currentVisibilityBlock;
+
     symbolTable.currentBlock = symbolTable.btab.size() - 1; // Pindah ke block baru
+    currentVisibilityBlock = symbolTable.currentBlock;
 
     int initialLastIndex = procBlock.last;
 
@@ -231,12 +239,13 @@ if (!node) return;
 
     // Keluar dari Scope Prosedur
     symbolTable.currentBlock = prevBlock;
+    currentVisibilityBlock = prevVisibility;
     currentLevel--;
 }
 
 void SemanticVisitor::visit(FunctionDeclarationNode *node)
 {
-if (!node) return;
+    if (!node) return;
 
     node->returnType->accept(this);
     DataType returnType = node->returnType->resolvedType;
@@ -260,7 +269,10 @@ if (!node) return;
     // Pindah masuk ke Scope Fungsi
     currentLevel++;
     int prevBlock = symbolTable.currentBlock;
+    int prevVisibility = currentVisibilityBlock;
+
     symbolTable.currentBlock = symbolTable.btab.size() - 1;
+    currentVisibilityBlock = symbolTable.currentBlock;
 
     // Register function name sebagai local variable
     int nameIndex = symbolTable.enter(node->name, ObjectType::VARIABLE, returnType, currentLevel);
@@ -326,6 +338,7 @@ if (!node) return;
 
     // Exit scope
     symbolTable.currentBlock = prevBlock;
+    currentVisibilityBlock = prevVisibility;
     currentLevel--;
 }
 
@@ -357,7 +370,7 @@ void SemanticVisitor::visit(SimpleTypeNode *node)
     }
     else {
         // User-defined type - lookup in symbol table
-        int index = symbolTable.lookup(node->name, symbolTable.btab[symbolTable.currentBlock].last);
+        int index = symbolTable.lookup(node->name, symbolTable.btab[currentVisibilityBlock].last);
         if (index != 0) {
             node->resolvedType = symbolTable.tab[index].type;
             node->resolvedRef = symbolTable.tab[index].ref;
@@ -371,55 +384,53 @@ void SemanticVisitor::visit(SimpleTypeNode *node)
 
 void SemanticVisitor::visit(ArrayTypeNode *node)
 {
-    if (!node) return;
+if (!node || node->resolvedType != DataType::UNKNOWN) return;
 
-    if (node->resolvedType != DataType::UNKNOWN) {
-        return; 
-    }
+    int elementAtabRef = 0;
+    DataType indexType = DataType::UNKNOWN; DataType elementType = DataType::UNKNOWN;
+    int low = 0, high = 0, elementSize = 0;
 
-    int elementAtabRef = 0;  // Reference to element type in symbol table if composite
-    DataType indexType = DataType::UNKNOWN;
-    DataType elementType = DataType::UNKNOWN;
-    int low = 0, high = 0;
-    int elementSize = 0;
+    auto getBoundValue = [&](std::shared_ptr<ExpressionNode> boundNode) -> int {
+        if (!boundNode) return 0;
+        if (auto intLit = std::dynamic_pointer_cast<IntegerLiteralNode>(boundNode)) {
+            return intLit->value;
+        }
+        if (auto varAcc = std::dynamic_pointer_cast<VarAccessNode>(boundNode)) {
+            int idx = symbolTable.lookup(varAcc->name, symbolTable.btab[currentVisibilityBlock].last);
+            if (idx != 0 && symbolTable.tab[idx].obj == ObjectType::CONSTANT) {
+                return symbolTable.tab[idx].adr;
+            }
+        }
+        return 0;
+    };
 
-    // Process index type (usually a range)
     if (node->indexType) {
         node->indexType->accept(this);
-        
-        // If index is a subrange, extract bounds from it directly
         if (auto rangeType = std::dynamic_pointer_cast<RangeTypeNode>(node->indexType)) {
-            // Determine bound type from lower bound
             if (rangeType->lowBound) {
-                indexType = rangeType->lowBound->evaluatedType;  // Get base type (INTEGER, CHAR, etc.)
-                
-                if (auto intLit = std::dynamic_pointer_cast<IntegerLiteralNode>(rangeType->lowBound)) {
-                    low = intLit->value;
-                }
-                else if (auto charLit = std::dynamic_pointer_cast<CharLiteralNode>(rangeType->lowBound)) {
-                    low = (int)charLit->value;
-                }
+                indexType = rangeType->lowBound->evaluatedType;
+                low = getBoundValue(rangeType->lowBound);
             }
-            
-            // Extract upper bound
             if (rangeType->highBound) {
-                if (auto intLit = std::dynamic_pointer_cast<IntegerLiteralNode>(rangeType->highBound)) {
-                    high = intLit->value;
-                }
-                else if (auto charLit = std::dynamic_pointer_cast<CharLiteralNode>(rangeType->highBound)) {
-                    high = (int)charLit->value;
-                }
+                high = getBoundValue(rangeType->highBound);
             }
         } else {
-            // Simple type index 
             indexType = node->indexType->resolvedType;
         }
     }
 
-    // Process element type
     if (node->elementType) {
         node->elementType->accept(this);
         elementType = node->elementType->resolvedType;
+        
+        if (auto simpleType = std::dynamic_pointer_cast<SimpleTypeNode>(node->elementType)) {
+            // Gunakan currentVisibilityBlock untuk mencari tipe elemen
+            int typeIndex = symbolTable.lookup(simpleType->name, symbolTable.btab[currentVisibilityBlock].last);
+            if (typeIndex != 0 && symbolTable.tab[typeIndex].obj == ObjectType::TYPE) {
+                elementType = symbolTable.tab[typeIndex].type;
+            }
+        }
+        
         if (elementType == DataType::ARRAY) {
             elementSize = symbolTable.atab[node->elementType->resolvedRef].size;
         } else if (elementType == DataType::RECORD) {
@@ -430,22 +441,15 @@ void SemanticVisitor::visit(ArrayTypeNode *node)
         elementAtabRef = node->elementType->resolvedRef; 
     }
 
-    // Create SINGLE atab entry for this array type
     AtabEntry arrayEntry;
-    arrayEntry.xtyp = indexType;          // Base index type (INTEGER, CHAR, ENUMERATED, etc., NOT SUBRANGE)
-    arrayEntry.etyp = elementType;        // Element type
-    arrayEntry.eref = elementAtabRef;     // Reference to element type in symbol table if composite
-    arrayEntry.low = low;                 // Lower bound
-    arrayEntry.high = high;               // Upper bound
-    arrayEntry.elsz = elementSize;        // Element size
-    arrayEntry.size = (high - low + 1) * elementSize;  // Total size
+    arrayEntry.xtyp = indexType; arrayEntry.etyp = elementType; arrayEntry.eref = elementAtabRef;
+    arrayEntry.low = low; arrayEntry.high = high; arrayEntry.elsz = elementSize;
+    arrayEntry.size = (high - low + 1) * elementSize;
     
-    // Add to array table
     symbolTable.atab.push_back(arrayEntry);
     
     node->resolvedType = DataType::ARRAY; 
     node->resolvedRef = symbolTable.atab.size() - 1;
-    node->atabRef = symbolTable.atab.size() - 1;
 }
 
 void SemanticVisitor::visit(RecordTypeNode *node)
@@ -488,9 +492,9 @@ void SemanticVisitor::visit(RecordTypeNode *node)
 
     symbolTable.btab[symbolTable.currentBlock].vsze = totalRecordSize;
     node->btabRef = symbolTable.currentBlock;
-    symbolTable.currentBlock = prevBlock;
     node->resolvedType = DataType::RECORD;
     node->resolvedRef = symbolTable.currentBlock;
+    symbolTable.currentBlock = prevBlock;
 }
 
 void SemanticVisitor::visit(EnumeratedTypeNode *node)
@@ -566,7 +570,7 @@ void SemanticVisitor::visit(VarAccessNode *node)
     if (!node) return;
 
     // Look up variable in symbol table
-    int index = symbolTable.lookup(node->name, symbolTable.btab[symbolTable.currentBlock].last);
+    int index = symbolTable.lookup(node->name, symbolTable.btab[currentVisibilityBlock].last);
     if (index == 0) {
         reportError(node, "Undefined identifier: " + node->name);
         node->evaluatedType = DataType::UNKNOWN;
@@ -583,22 +587,35 @@ void SemanticVisitor::visit(VarAccessNode *node)
 
 void SemanticVisitor::visit(ArrayAccessNode *node)
 {
-if (!node) return;
+    if (!node) return;
+
+    DataType expectedIndexType = DataType::UNKNOWN;
 
     if (node->target) {
         node->target->accept(this);
-        node->evaluatedType = node->target->evaluatedType; 
         
         int atabIndex = node->target->evaluatedRef;
         if (atabIndex != 0) {
+            // Evaluasi tipe elemen (etyp)
+            node->evaluatedType = symbolTable.atab[atabIndex].etyp;
             node->evaluatedRef = symbolTable.atab[atabIndex].eref;
+            
+            // Simpan tipe indeks yang diizinkan untuk array ini (xtyp)
+            expectedIndexType = symbolTable.atab[atabIndex].xtyp;
+        } else {
+            node->evaluatedType = DataType::UNKNOWN;
         }
     }
 
     if (node->index) {
         node->index->accept(this);
-        if (node->index->evaluatedType != DataType::INTEGER) {
-            reportError(node, "Array index must be integer");
+        DataType passedIndexType = node->index->evaluatedType;
+
+        // Bandingkan indeks yang dipakai dengan deklarasi xtyp di atab
+        if (expectedIndexType != DataType::UNKNOWN) {
+            if (!isCompatible(expectedIndexType, passedIndexType)) {
+                reportError(node, "Array index type mismatch");
+            }
         }
     }
 }
@@ -668,6 +685,9 @@ void SemanticVisitor::visit(UnaryOpNode *node)
     if (node->operand) {
         node->operand->accept(this);
         node->evaluatedType = node->operand->evaluatedType;
+        if (node->evaluatedType == DataType::SUBRANGE) {
+            node->evaluatedType = DataType::INTEGER;
+        }
     }
 }
 
@@ -675,7 +695,7 @@ void SemanticVisitor::visit(FunctionCallNode *node)
 {
     if (!node) return;
 
-    int searchLimit = symbolTable.btab[symbolTable.currentBlock].last;
+    int searchLimit = symbolTable.btab[currentVisibilityBlock].last;
     int index = 0;
 
     int i = searchLimit;
@@ -833,7 +853,7 @@ void SemanticVisitor::visit(ForLoopNode *node)
     if (!node) return;
 
     // Look up counter variable
-    int index = symbolTable.lookup(node->counterVar, symbolTable.btab[symbolTable.currentBlock].last);
+    int index = symbolTable.lookup(node->counterVar, symbolTable.btab[currentVisibilityBlock].last);
 
     if (index == 0) {
         reportError(node, "Undefined loop variable: " + node->counterVar);
@@ -892,7 +912,7 @@ void SemanticVisitor::visit(ProcedureCallNode *node)
 {
     if (!node) return;
 
-    int searchLimit = symbolTable.btab[symbolTable.currentBlock].last;
+    int searchLimit = symbolTable.btab[currentVisibilityBlock].last;
     int index = 0;
 
     int i = searchLimit;
@@ -944,6 +964,9 @@ DataType SemanticVisitor::resolveBinaryType(const std::string &op, DataType left
 {
     std::string lowerOp = op;
     std::transform(lowerOp.begin(), lowerOp.end(), lowerOp.begin(), ::tolower);
+    
+    if (left == DataType::SUBRANGE) left = DataType::INTEGER;
+    if (right == DataType::SUBRANGE) right = DataType::INTEGER;
 
     // Arithmetic operators: +, -, *, /, mod, div
     if (lowerOp == "+" || lowerOp == "-" || lowerOp == "*" || lowerOp == "/" || lowerOp == "mod" || lowerOp == "div") {

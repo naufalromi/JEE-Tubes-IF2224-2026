@@ -1,0 +1,62 @@
+program UjianSekolah;
+
+const
+  MaxSiswa == 5;
+  KKM == 70;
+
+type
+  Hari == (Senin, Selasa, Rabu, Kamis, Jumat);
+  Skor == 0..100;
+  
+  Siswa == record
+    nama: String;
+    umur: Integer;
+    nilai: array [1..3] of Skor; { Array di dalam Record }
+  end;
+  
+  DaftarSiswa == array [1..MaxSiswa] of Siswa; { Array of Record }
+
+var
+  kelas: DaftarSiswa;
+  i, totalLulus: Integer;
+
+procedure ProsesNilai(idx: Integer; bonus: Integer); { Level 1 }
+var
+  tempSiswa: Siswa; { Level 1 }
+  
+  { Prosedur yang dibuat DI DALAM prosedur lain }
+  procedure TambahBonusEkstra(ekstra: Integer); { Level 1 }
+  var
+    pengali: Integer; { Level 2 }
+  begin
+    pengali := 2;
+    tempSiswa.nilai[1] := tempSiswa.nilai[1] + (ekstra * pengali);
+  end;
+
+begin
+  tempSiswa := kelas[idx];
+  TambahBonusEkstra(5); { Pemanggilan prosedur bersarang }
+end;
+
+function CekLulus(s: Siswa): Boolean;
+begin
+  if s.nilai[1] >= KKM then
+    CekLulus := True
+  else
+    CekLulus := False;
+end;
+
+{ --- Main Program Block --- }
+begin
+  kelas[1].nama := 'Budi';
+  kelas[1].umur := 16;
+  kelas[1].nilai[1] := 85;
+  
+  ProsesNilai(1, 5);
+  
+  for i := 1 to MaxSiswa do
+  begin
+    if CekLulus(kelas[i]) == True then
+      totalLulus := totalLulus + 1;
+  end;
+end.

@@ -17,6 +17,7 @@ class SemanticVisitor : public ASTVisitor {
 private:
     SymbolTable symbolTable;
     int currentLevel = 0;
+    int currentVisibilityBlock = 0;
     std::vector<SemanticError> errors;
     std::vector<std::string> activeLoopCounters;
 
