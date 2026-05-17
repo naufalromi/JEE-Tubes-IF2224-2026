@@ -174,23 +174,29 @@ void SemanticVisitor::visit(ProcedureDeclarationNode *node)
     // Enter new scope for procedure body
     currentLevel++;
 
-    // Create block table entry
+    int initialLastIndex = procIndex;
+
     BtabEntry procBlock;
-    procBlock.last = symbolTable.tab.size() - 1;
+    procBlock.last = initialLastIndex;
     procBlock.lpar = -1;
     procBlock.psze = 0;
     procBlock.vsze = 0;
     symbolTable.btab.push_back(procBlock);
 
-    // Process parameters (add to symbol table)
-    for (auto &param : node->parameters) {
-        param->accept(this);
+    for (auto &param : node->parameters) { param->accept(this); }
+    if (node->body) { node->body->accept(this); }
+
+    int currentLastIndex = symbolTable.btab.back().last;
+    int totalLocalMemory = 0;
+
+    for (int i = initialLastIndex + 1; i <= currentLastIndex; i++) {
+        if (symbolTable.tab[i].obj == ObjectType::VARIABLE) {
+            totalLocalMemory += getDataTypeSize(symbolTable.tab[i].type);
+        }
     }
 
-    // Process procedure body
-    if (node->body) {
-        node->body->accept(this);
-    }
+    node->localVariablesSize = totalLocalMemory;
+    symbolTable.btab.back().vsze = totalLocalMemory;
 
     // Exit scope
     symbolTable.btab.pop_back();
@@ -201,10 +207,7 @@ void SemanticVisitor::visit(FunctionDeclarationNode *node)
 {
     if (!node) return;
 
-    // Process return type
     node->returnType->accept(this);
-
-    // Enter function into symbol table at current level
     DataType returnType = node->returnType->resolvedType;
     int funcIndex = symbolTable.enter(node->name, ObjectType::FUNCTION, returnType, currentLevel);
 
@@ -214,37 +217,42 @@ void SemanticVisitor::visit(FunctionDeclarationNode *node)
     }
 
     node->scopeLevel = currentLevel;
-
-    // Enter new scope for function body
     currentLevel++;
 
-    // Create block table entry
+    int initialLastIndex = funcIndex; 
+
     BtabEntry funcBlock;
-    funcBlock.last = symbolTable.tab.size() - 1;
+    funcBlock.last = initialLastIndex;
     funcBlock.lpar = -1;
     funcBlock.psze = 0;
     funcBlock.vsze = 0;
     symbolTable.btab.push_back(funcBlock);
 
-    // Register function name as a variable in function scope (for return value assignment)
-    // This allows: Faktorial := value inside the function body
+    // Register function name as a variable
     int nameIndex = symbolTable.enter(node->name, ObjectType::VARIABLE, returnType, currentLevel);
     if (nameIndex == -1) {
         reportError(node, "Failed to register function name in local scope: " + node->name);
     }
 
-    // Process parameters
-    for (auto &param : node->parameters) {
-        param->accept(this);
-    }
+    for (auto &param : node->parameters) { param->accept(this); }
+    if (node->body) { node->body->accept(this); }
 
-    // Process function body
-    if (node->body) {
-        node->body->accept(this);
+    int currentLastIndex = symbolTable.btab.back().last;
+    int totalLocalMemory = 0;
+
+    // Scan all entry
+    for (int i = initialLastIndex + 1; i <= currentLastIndex; i++) {
+        if (symbolTable.tab[i].obj == ObjectType::VARIABLE) {
+            totalLocalMemory += getDataTypeSize(symbolTable.tab[i].type);
+        }
     }
+    
+    node->localVariablesSize = totalLocalMemory;
+    // Update vsze
+    symbolTable.btab.back().vsze = totalLocalMemory;
 
     // Exit scope
-    symbolTable.btab.pop_back();
+    symbolTable.btab.pop_back(); 
     currentLevel--;
 }
 
@@ -290,6 +298,10 @@ void SemanticVisitor::visit(SimpleTypeNode *node)
 void SemanticVisitor::visit(ArrayTypeNode *node)
 {
     if (!node) return;
+
+    if (node->resolvedType != DataType::UNKNOWN) {
+        return; 
+    }
 
     int elementAtabRef = 0;  // Reference to element type in symbol table if composite
     DataType indexType = DataType::UNKNOWN;
@@ -383,6 +395,10 @@ void SemanticVisitor::visit(RecordTypeNode *node)
 {
     if (!node) return;
 
+    if (node->resolvedType != DataType::UNKNOWN) {
+        return; 
+    }
+
     // Process all fields in record
     for (auto &field : node->fields) {
         field->accept(this);
@@ -394,6 +410,12 @@ void SemanticVisitor::visit(RecordTypeNode *node)
 void SemanticVisitor::visit(EnumeratedTypeNode *node)
 {
     if (!node) return;
+    for (const auto& element : node->elements) {
+        int index = symbolTable.enter(element, ObjectType::CONSTANT, DataType::ENUMERATED, currentLevel);
+        if (index == -1) {
+            reportError(node, "Duplicate identifier in enum: " + element);
+        }
+    }
     node->resolvedType = DataType::ENUMERATED;
 }
 
@@ -462,6 +484,10 @@ void SemanticVisitor::visit(VarAccessNode *node)
     }
     else {
         node->evaluatedType = symbolTable.tab[index].type;
+        // Check constant
+        if (symbolTable.tab[index].obj == ObjectType::CONSTANT) {
+            node->isConstant = true;
+        }
     }
 }
 
@@ -497,26 +523,39 @@ void SemanticVisitor::visit(FieldAccessNode *node)
         }
     }
 
-    // Field type would need record structure info
-    node->evaluatedType = DataType::UNKNOWN;
+    int index = symbolTable.lookup(node->fieldName, symbolTable.btab.back().last);
+    
+    if (index == 0) {
+        reportError(node, "Undefined record field: " + node->fieldName);
+        node->evaluatedType = DataType::UNKNOWN;
+    } else {
+        node->evaluatedType = symbolTable.tab[index].type;
+    }
 }
 
 void SemanticVisitor::visit(BinaryOpNode *node)
 {
     if (!node) return;
 
+    DataType leftType = DataType::UNKNOWN;
+    DataType rightType = DataType::UNKNOWN;
+
     // Evaluate both operands
     if (node->left) {
         node->left->accept(this);
+        leftType = node->left->evaluatedType;
+    } else {
+        reportError(node, "Internal Error: Left operand is missing in binary operation");
     }
     if (node->right) {
         node->right->accept(this);
+        rightType = node->right->evaluatedType;
+    } else {
+        reportError(node, "Internal Error: Right operand is missing in binary operation");
     }
 
     // Type checking based on operator
-    node->evaluatedType = resolveBinaryType(node->op,
-                                            node->left->evaluatedType,
-                                            node->right->evaluatedType);
+    node->evaluatedType = resolveBinaryType(node->op, leftType, rightType);
 }
 
 void SemanticVisitor::visit(UnaryOpNode *node)
@@ -534,18 +573,18 @@ void SemanticVisitor::visit(FunctionCallNode *node)
 {
     if (!node) return;
 
-    // Look up function - search specifically for FUNCTION entries
-    int index = 0;
     int searchLimit = symbolTable.btab.back().last;
-    
-    // Search backwards from current scope to find FUNCTION entry
-    for (int i = searchLimit; i >= 0; i--) {
+    int index = 0;
+
+    int i = searchLimit;
+    while (i > 0) {
         if (symbolTable.tab[i].name == node->name && symbolTable.tab[i].obj == ObjectType::FUNCTION) {
             index = i;
             break;
         }
+        i = symbolTable.tab[i].link;
     }
-    
+
     if (index == 0) {
         reportError(node, "Undefined function: " + node->name);
         node->evaluatedType = DataType::UNKNOWN;
@@ -590,6 +629,17 @@ void SemanticVisitor::visit(AssignmentStatementNode *node)
     if (node->target) {
         node->target->accept(this);
 
+        if (auto varAccess = std::dynamic_pointer_cast<VarAccessNode>(node->target)) {
+            // Constant check
+            if (varAccess->isConstant) {
+                reportError(node, "Illegal assignment: '" + varAccess->name + "' is a constant and cannot be modified");
+            }
+            // Loop counter check
+            if (std::find(activeLoopCounters.begin(), activeLoopCounters.end(), varAccess->name) != activeLoopCounters.end()) {
+                reportError(node, "Illegal assignment: FOR loop counter '" + varAccess->name + "' cannot be modified");
+            }
+        }
+
         // Type compatibility check
         if (!isCompatible(node->target->evaluatedType, node->value->evaluatedType)) {
             reportError(node, "Type mismatch in assignment");
@@ -624,9 +674,11 @@ void SemanticVisitor::visit(CaseStatementNode *node)
 {
     if (!node) return;
 
-    // Evaluate case expression
+    // Save data type of main expression
+    DataType exprType = DataType::UNKNOWN;
     if (node->expression) {
         node->expression->accept(this);
+        exprType = node->expression->evaluatedType;
     }
 
     // Process each case
@@ -635,6 +687,13 @@ void SemanticVisitor::visit(CaseStatementNode *node)
         for (auto &caseConst : caseItem.first) {
             if (caseConst) {
                 caseConst->accept(this);
+                // Check data type
+                DataType constType = caseConst->evaluatedType;
+                if (exprType != DataType::UNKNOWN && constType != DataType::UNKNOWN) {
+                    if (!isCompatible(exprType, constType)) {
+                        reportError(node, "Type mismatch: case label type does not match case expression type");
+                    }
+                }
             }
         }
         // Execute statement
@@ -696,10 +755,14 @@ void SemanticVisitor::visit(ForLoopNode *node)
         }
     }
 
+    activeLoopCounters.push_back(node->counterVar);
+
     // Execute loop body
     if (node->body) {
         node->body->accept(this);
     }
+
+    activeLoopCounters.pop_back();
 }
 
 void SemanticVisitor::visit(RepeatUntilNode *node)
@@ -726,18 +789,18 @@ void SemanticVisitor::visit(ProcedureCallNode *node)
 {
     if (!node) return;
 
-    // Look up procedure - search specifically for PROCEDURE entries
-    int index = 0;
     int searchLimit = symbolTable.btab.back().last;
-    
-    // Search backwards from current scope to find PROCEDURE entry
-    for (int i = searchLimit; i >= 0; i--) {
+    int index = 0;
+
+    int i = searchLimit;
+    while (i > 0) {
         if (symbolTable.tab[i].name == node->name && symbolTable.tab[i].obj == ObjectType::PROCEDURE) {
             index = i;
             break;
         }
+        i = symbolTable.tab[i].link;
     }
-    
+
     if (index == 0) {
         reportError(node, "Undefined procedure: " + node->name);
         return;
@@ -768,13 +831,19 @@ bool SemanticVisitor::isCompatible(DataType target, DataType source)
     if (target == DataType::REAL && source == DataType::INTEGER) return true;
     if (target == DataType::STRING && source == DataType::CHAR) return true;
 
+    if (target == DataType::SUBRANGE && source == DataType::INTEGER) return true;
+    if (target == DataType::INTEGER && source == DataType::SUBRANGE) return true;
+
     return false;
 }
 
 DataType SemanticVisitor::resolveBinaryType(const std::string &op, DataType left, DataType right)
 {
+    std::string lowerOp = op;
+    std::transform(lowerOp.begin(), lowerOp.end(), lowerOp.begin(), ::tolower);
+
     // Arithmetic operators: +, -, *, /, mod, div
-    if (op == "+" || op == "-" || op == "*" || op == "/" || op == "mod" || op == "div") {
+    if (lowerOp == "+" || lowerOp == "-" || lowerOp == "*" || lowerOp == "/" || lowerOp == "mod" || lowerOp == "div") {
         if ((left == DataType::INTEGER || left == DataType::REAL) &&
             (right == DataType::INTEGER || right == DataType::REAL)) {
             // Result is REAL if either operand is REAL, otherwise INTEGER
@@ -783,12 +852,12 @@ DataType SemanticVisitor::resolveBinaryType(const std::string &op, DataType left
     }
 
     // Comparison operators: ==, <>, <, <=, >, >=
-    if (op == "==" || op == "=" || op == "<>" || op == "<" || op == "<=" || op == ">" || op == ">=") {
+    if (lowerOp == "==" || lowerOp == "=" || lowerOp == "<>" || lowerOp == "<" || lowerOp == "<=" || lowerOp == ">" || lowerOp == ">=") {
         return DataType::BOOLEAN;
     }
 
     // Logical operators: and, or
-    if (op == "and" || op == "or") {
+    if (lowerOp == "and" || lowerOp == "or") {
         if (left == DataType::BOOLEAN && right == DataType::BOOLEAN) {
             return DataType::BOOLEAN;
         }

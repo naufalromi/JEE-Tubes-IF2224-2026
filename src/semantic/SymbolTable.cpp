@@ -40,6 +40,9 @@ void SymbolTable::initPredefined()
     enter("write", ObjectType::PROCEDURE, DataType::VOID, 0);
     enter("read", ObjectType::PROCEDURE, DataType::VOID, 0);
     enter("readln", ObjectType::PROCEDURE, DataType::VOID, 0);
+
+    enter("True", ObjectType::CONSTANT, DataType::BOOLEAN, 0);
+    enter("False", ObjectType::CONSTANT, DataType::BOOLEAN, 0);
 };
 
 int SymbolTable::lookup(std::string name, int lastIndex)

@@ -18,6 +18,7 @@ private:
     SymbolTable symbolTable;
     int currentLevel = 0;
     std::vector<SemanticError> errors;
+    std::vector<std::string> activeLoopCounters;
 
     // Helper: Penanganan Error
     void reportError(ASTNode* node, const std::string& message);

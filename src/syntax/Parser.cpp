@@ -990,7 +990,7 @@ std::shared_ptr<TreeNode> Parser::parseCaseBlock()
     return node;
 }
 
-// 29 WHILE-STATEMENT -> whilesy + EXPRESSION + dosy + STATEMENT 
+// 29 WHILE-STATEMENT -> whilesy + EXPRESSION + dosy + (STATEMENT | COMPOUND-STATEMENT) 
 std::shared_ptr<TreeNode> Parser::parseWhileStatement()
 {
     if (peek().type != TokenType::WHILESY) return nullptr;
@@ -1061,7 +1061,7 @@ std::shared_ptr<TreeNode> Parser::parseRepeatStatement(){
     return node;
 }
 
-// 31 FOR-STATEMENT -> forsy + ident + becomes + EXPRESSION + ( tosy | downtosy) + EXPRESSION + dosy + STATEMENT
+// 31 FOR-STATEMENT -> forsy + ident + becomes + EXPRESSION + ( tosy | downtosy) + EXPRESSION + dosy + (STATEMENT | COMPOUND-STATEMENT)
 std::shared_ptr<TreeNode> Parser::parseForStatement()
 {
     if (peek().type != TokenType::FORSY) {

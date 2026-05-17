@@ -8,13 +8,17 @@ begin
   batas := 5;
   
   for i := 1 to batas do
+  begin
     if (i mod 2 == 0) then
       writeln('Genap')
     else
       writeln('Ganjil');
+  end;
 
   while i < 10 do 
+  begin
     i := i + 1;
+  end;
 
   repeat
     batas := batas - 1;

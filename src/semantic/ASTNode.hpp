@@ -143,6 +143,7 @@ public:
     std::string name;
     std::vector<std::shared_ptr<VarDeclarationNode>> parameters;
     std::shared_ptr<BlockNode> body;
+    int localVariablesSize = 0;
 
     ProcedureDeclarationNode(const std::string& n) 
         : DeclarationNode(ASTNodeType::ProcDecl), name(n) {}
@@ -157,6 +158,7 @@ public:
     std::vector<std::shared_ptr<VarDeclarationNode>> parameters;
     std::shared_ptr<TypeNode> returnType;
     std::shared_ptr<BlockNode> body;
+    int localVariablesSize = 0;
 
     FunctionDeclarationNode(const std::string& n, std::shared_ptr<TypeNode> retType) 
         : DeclarationNode(ASTNodeType::FuncDecl), name(n), returnType(retType) {}
@@ -213,6 +215,7 @@ public:
 class VarAccessNode : public ExpressionNode {
 public:
     std::string name;
+    bool isConstant = false;
     std::weak_ptr<DeclarationNode> declarationRef; 
 
     VarAccessNode(const std::string& n) : ExpressionNode(ASTNodeType::VarAccess), name(n) {}

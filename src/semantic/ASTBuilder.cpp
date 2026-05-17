@@ -386,7 +386,6 @@ std::shared_ptr<ExpressionNode> ASTBuilder::buildExpression(std::shared_ptr<Tree
             if (child->type == NodeType::Plus || child->type == NodeType::Minus) {
                 if (!expr) isNegative = (child->type == NodeType::Minus);
             }
-            // Cek Term
             else if (child->type == NodeType::Term) {
                 auto termNode = buildExpression(child);
                 
@@ -443,6 +442,10 @@ std::shared_ptr<ExpressionNode> ASTBuilder::buildExpression(std::shared_ptr<Tree
             }
             else if (child->type == NodeType::Variable) {
                 auto expr = buildVariableAccess(child);
+                return unaryOp.empty() ? expr : setSourceLocation(std::make_shared<UnaryOpNode>(unaryOp, expr), node);
+            }
+            else if (child->type == NodeType::Factor) {
+                auto expr = buildExpression(child);
                 return unaryOp.empty() ? expr : setSourceLocation(std::make_shared<UnaryOpNode>(unaryOp, expr), node);
             }
             else if (child->type == NodeType::ProcedureCall) {
@@ -715,7 +718,6 @@ std::shared_ptr<CaseStatementNode> ASTBuilder::buildCaseStatement(std::shared_pt
         }
     }
 
-    // Buat node AST-nya
     auto caseStmtNode = setSourceLocation(std::make_shared<CaseStatementNode>(caseExpr), node);
     size_t i = 0;
     while (i < caseBlocksQueue.size()) {
@@ -754,9 +756,9 @@ std::shared_ptr<WhileLoopNode> ASTBuilder::buildWhileLoop(std::shared_ptr<TreeNo
         else if (child->type == NodeType::CompoundStatement) {
             body = buildCompoundStatement(child);
         }
-        else if (child->type == NodeType::Statement) {
-            body = buildStatement(child);
-        }
+        // else if (child->type == NodeType::Statement) {
+        //     body = buildStatement(child);
+        // }
     }
 
     return setSourceLocation(std::make_shared<WhileLoopNode>(condition, body), node);
@@ -792,9 +794,9 @@ std::shared_ptr<ForLoopNode> ASTBuilder::buildForLoop(std::shared_ptr<TreeNode> 
         else if (child->type == NodeType::CompoundStatement) {
             body = buildCompoundStatement(child);
         }
-        else if (child->type == NodeType::Statement) {
-            body = buildStatement(child);
-        }
+        // else if (child->type == NodeType::Statement) {
+        //     body = buildStatement(child);
+        // }
     }
     return setSourceLocation(std::make_shared<ForLoopNode>(counterVar, startValue, endValue, isDownTo, body), node);
 }
