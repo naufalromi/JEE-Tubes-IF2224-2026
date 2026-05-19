@@ -51,28 +51,7 @@ void SemanticVisitor::visit(ProgramNode *node)
     if (node->statements) {
         node->statements->accept(this);
     }
-}
-
-void SemanticVisitor::visit(VarDeclarationNode *node)
-{
-    if (!node) return;
-
-    if (!node->typeDefinition) {
-        reportError(node, "Variable declaration has no type");
-        return;
-    }
-
-    node->typeDefinition->accept(this);
-    DataType type = node->typeDefinition->resolvedType;
-
-    int index = symbolTable.enter(node->name, ObjectType::VARIABLE, type, currentLevel);
-
-    if (index != -1) {
-        node->scopeLevel = currentLevel;
-        symbolTable.tab[index].ref = node->typeDefinition->resolvedRef; 
-    } else {
-        reportError(node, "Duplicate identifier: " + node->name);
-    }
+    node->scopeLevel = currentLevel;
 }
 
 /**
@@ -90,7 +69,6 @@ void SemanticVisitor::visit(VarDeclarationNode *node)
 void SemanticVisitor::visit(BlockNode *node)
 {
     if (!node) return;
-
     node->scopeLevel = currentLevel;
 
     // Process all declarations in this block (const, type, var, nested proc/func)
@@ -106,9 +84,34 @@ void SemanticVisitor::visit(BlockNode *node)
 
 // ============= DECLARATIONS =============
 
+void SemanticVisitor::visit(VarDeclarationNode *node)
+{
+    if (!node) return;
+    node->scopeLevel = currentLevel;
+
+    if (!node->typeDefinition) {
+        reportError(node, "Variable declaration has no type");
+        return;
+    }
+
+    node->typeDefinition->accept(this);
+    DataType type = node->typeDefinition->resolvedType;
+
+    int index = symbolTable.enter(node->name, ObjectType::VARIABLE, type, currentLevel);
+
+    if (index != -1) {
+        node->scopeLevel = currentLevel;
+        symbolTable.tab[index].ref = node->typeDefinition->resolvedRef;
+        node->tabIndex = index; 
+    } else {
+        reportError(node, "Duplicate identifier: " + node->name);
+    }
+}
+
 void SemanticVisitor::visit(ConstDeclarationNode *node)
 {
     if (!node) return;
+    node->scopeLevel = currentLevel;
 
     // Evaluate constant value
     node->value->accept(this);
@@ -125,12 +128,14 @@ void SemanticVisitor::visit(ConstDeclarationNode *node)
         if (auto intLit = std::dynamic_pointer_cast<IntegerLiteralNode>(node->value)) {
             symbolTable.tab[index].adr = intLit->value;
         }
+        node->tabIndex = index;
     }
 }
 
 void SemanticVisitor::visit(TypeDeclarationNode *node)
 {
     if (!node) return;
+    node->scopeLevel = currentLevel;
 
     if (!node->typeDefinition) {
         reportError(node, "Type declaration has no definition");
@@ -150,19 +155,24 @@ void SemanticVisitor::visit(TypeDeclarationNode *node)
     else {
         node->scopeLevel = currentLevel;
         symbolTable.tab[index].ref = node->typeDefinition->resolvedRef;
+        node->tabIndex = index;
     }
 }
 
 void SemanticVisitor::visit(ProcedureDeclarationNode *node)
 {
     if (!node) return;
+    node->scopeLevel = currentLevel;
 
     // Tambahkan prosedur ke scope parent
     int procIndex = symbolTable.enter(node->name, ObjectType::PROCEDURE, DataType::UNKNOWN, currentLevel);
     if (procIndex == -1) {
         reportError(node, "Duplicate identifier: " + node->name);
         return;
+    } else {
+        node->tabIndex = procIndex;
     }
+
     node->scopeLevel = currentLevel;
 
     // Siapkan Block baru untuk Prosedur
@@ -246,6 +256,7 @@ void SemanticVisitor::visit(ProcedureDeclarationNode *node)
 void SemanticVisitor::visit(FunctionDeclarationNode *node)
 {
     if (!node) return;
+    node->scopeLevel = currentLevel;
 
     node->returnType->accept(this);
     DataType returnType = node->returnType->resolvedType;
@@ -255,7 +266,10 @@ void SemanticVisitor::visit(FunctionDeclarationNode *node)
     if (funcIndex == -1) {
         reportError(node, "Duplicate identifier: " + node->name);
         return;
+    } else {
+        node->tabIndex = funcIndex;
     }
+
     node->scopeLevel = currentLevel;
 
     // Siapkan block baru untuk Fungsi
@@ -568,6 +582,7 @@ void SemanticVisitor::visit(BooleanLiteralNode *node)
 void SemanticVisitor::visit(VarAccessNode *node)
 {
     if (!node) return;
+    node->scopeLevel = currentLevel;
 
     // Look up variable in symbol table
     int index = symbolTable.lookup(node->name, symbolTable.btab[currentVisibilityBlock].last);
@@ -578,6 +593,7 @@ void SemanticVisitor::visit(VarAccessNode *node)
     else {
         node->evaluatedType = symbolTable.tab[index].type;
         node->evaluatedRef = symbolTable.tab[index].ref;
+        node->tabIndex = index;
         // Check constant
         if (symbolTable.tab[index].obj == ObjectType::CONSTANT) {
             node->isConstant = true;
@@ -588,6 +604,7 @@ void SemanticVisitor::visit(VarAccessNode *node)
 void SemanticVisitor::visit(ArrayAccessNode *node)
 {
     if (!node) return;
+    node->scopeLevel = currentLevel;
 
     DataType expectedIndexType = DataType::UNKNOWN;
 
@@ -599,7 +616,6 @@ void SemanticVisitor::visit(ArrayAccessNode *node)
             // Evaluasi tipe elemen (etyp)
             node->evaluatedType = symbolTable.atab[atabIndex].etyp;
             node->evaluatedRef = symbolTable.atab[atabIndex].eref;
-            
             // Simpan tipe indeks yang diizinkan untuk array ini (xtyp)
             expectedIndexType = symbolTable.atab[atabIndex].xtyp;
         } else {
@@ -623,6 +639,7 @@ void SemanticVisitor::visit(ArrayAccessNode *node)
 void SemanticVisitor::visit(FieldAccessNode *node)
 {
     if (!node) return;
+    node->scopeLevel = currentLevel;
 
     // Evaluasi Target (Bisa berupa variabel 's1' atau array 'siswaBaru[1]')
     if (node->target) {
@@ -649,6 +666,7 @@ void SemanticVisitor::visit(FieldAccessNode *node)
     } else {
         node->evaluatedType = symbolTable.tab[index].type;
         node->evaluatedRef = symbolTable.tab[index].ref;
+        node->tabIndex = index;
     }
 }
 
@@ -694,6 +712,7 @@ void SemanticVisitor::visit(UnaryOpNode *node)
 void SemanticVisitor::visit(FunctionCallNode *node)
 {
     if (!node) return;
+    node->scopeLevel = currentLevel;
 
     int searchLimit = symbolTable.btab[currentVisibilityBlock].last;
     int index = 0;
@@ -722,6 +741,7 @@ void SemanticVisitor::visit(FunctionCallNode *node)
 
     // Function return type
     node->evaluatedType = symbolTable.tab[index].type;
+    node->tabIndex = index;
 }
 
 // ============= STATEMENTS =============
@@ -911,6 +931,7 @@ void SemanticVisitor::visit(RepeatUntilNode *node)
 void SemanticVisitor::visit(ProcedureCallNode *node)
 {
     if (!node) return;
+    node->scopeLevel = currentLevel;
 
     int searchLimit = symbolTable.btab[currentVisibilityBlock].last;
     int index = 0;
@@ -928,6 +949,8 @@ void SemanticVisitor::visit(ProcedureCallNode *node)
         reportError(node, "Undefined procedure: " + node->name);
         return;
     }
+
+    node->tabIndex = index;
 
     // Evaluate all arguments
     for (auto &arg : node->args) {

@@ -36,7 +36,7 @@ int main()
             inputPath = "test/parser/" + std::to_string(filenum) + ".arion";
         } 
         else if (typeChoice == 3) {
-            inputPath = "test/semantic/" + std::to_string(filenum) + ".arion";
+            inputPath = "test/parser/" + std::to_string(filenum) + ".arion";
         }
 
         try

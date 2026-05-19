@@ -7,6 +7,8 @@
 class ASTPrinter : public ASTVisitor {
 private:
     std::string currentPrefix = "";
+    std::string pendingRole = "";
+    
     bool isLastChild = true;
     bool isRoot = true;
 

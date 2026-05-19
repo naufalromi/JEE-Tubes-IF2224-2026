@@ -101,8 +101,11 @@ void SemanticAnalyzer::printSymbolTable() const
               << std::setw(15) << "Type"
               << std::setw(15) << "Object"
               << std::setw(8) << "Level"
-              << std::setw(10) << "Link\n";
-    std::cout << std::string(70, '-') << "\n";
+              << std::setw(8) << "Link"
+              << std::setw(8) << "Ref"
+              << std::setw(6) << "Nrm"
+              << std::setw(10) << "Adr/Val\n";
+    std::cout << std::string(97, '-') << "\n";
 
     for (size_t i = 0; i < tab.size(); i++) {
         if (tab[i].name.empty()) continue; // Skip empty entries
@@ -112,7 +115,10 @@ void SemanticAnalyzer::printSymbolTable() const
                   << std::setw(15) << dataTypeToString(tab[i].type)
                   << std::setw(15) << objectTypeToString(tab[i].obj)
                   << std::setw(8) << tab[i].lev
-                  << std::setw(10) << tab[i].link << "\n";
+                  << std::setw(8) << tab[i].link
+                  << std::setw(8) << tab[i].ref
+                  << std::setw(6) << tab[i].nrm
+                  << std::setw(10) << tab[i].adr << "\n";
     }
     std::cout << "============================================================\n\n";
 }
@@ -128,20 +134,22 @@ void SemanticAnalyzer::printArrayTable() const
     std::cout << std::left << std::setw(8) << "Index"
               << std::setw(15) << "Index Type"
               << std::setw(15) << "Element Type"
+              << std::setw(10) << "Elem Ref"
               << std::setw(8) << "Low"
               << std::setw(8) << "High"
-              << std::setw(10) << "Elem Size"
-              << std::setw(10) << "Total Size\n";
-    std::cout << std::string(75, '-') << "\n";
+              << std::setw(12) << "Elem Size"
+              << std::setw(12) << "Total Size\n";
+    std::cout << std::string(88, '-') << "\n";
 
     for (size_t i = 0; i < atab.size(); i++) {
         std::cout << std::left << std::setw(8) << i
                   << std::setw(15) << dataTypeToString(atab[i].xtyp)
                   << std::setw(15) << dataTypeToString(atab[i].etyp)
+                  << std::setw(10) << atab[i].eref
                   << std::setw(8) << atab[i].low
                   << std::setw(8) << atab[i].high
-                  << std::setw(10) << atab[i].elsz
-                  << std::setw(10) << atab[i].size << "\n";
+                  << std::setw(12) << atab[i].elsz
+                  << std::setw(12) << atab[i].size << "\n";
     }
     std::cout << "=============================================================\n\n";
 }

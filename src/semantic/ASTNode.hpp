@@ -60,7 +60,6 @@ class ArrayTypeNode : public TypeNode {
 public:
     std::shared_ptr<TypeNode> indexType;
     std::shared_ptr<TypeNode> elementType; 
-    int atabRef = 0;
 
     ArrayTypeNode(std::shared_ptr<TypeNode> idxType, std::shared_ptr<TypeNode> elemType)
         : TypeNode(ASTNodeType::ArrayType), indexType(idxType), elementType(elemType) {}
@@ -72,7 +71,6 @@ public:
 class RecordTypeNode : public TypeNode {
 public:
     std::vector<std::shared_ptr<VarDeclarationNode>> fields;
-    int btabRef = 0;
 
     RecordTypeNode() : TypeNode(ASTNodeType::RecordType) {}
     void accept(ASTVisitor* visitor) override { visitor->visit(this); }
@@ -103,6 +101,7 @@ public:
  */
 class DeclarationNode : public ASTNode {
 public:
+    int tabIndex = 0;
     DeclarationNode(ASTNodeType t) : ASTNode(t) {}
 };
 
@@ -221,7 +220,7 @@ class VarAccessNode : public ExpressionNode {
 public:
     std::string name;
     bool isConstant = false;
-    std::weak_ptr<DeclarationNode> declarationRef; 
+    int tabIndex = 0; 
 
     VarAccessNode(const std::string& n) : ExpressionNode(ASTNodeType::VarAccess), name(n) {}
     void accept(ASTVisitor* visitor) override { visitor->visit(this); }
@@ -240,7 +239,8 @@ public:
 class FieldAccessNode : public ExpressionNode {
 public:
     std::shared_ptr<ExpressionNode> target; 
-    std::string fieldName;                  
+    std::string fieldName;
+    int tabIndex = 0;                  
 
     FieldAccessNode(std::shared_ptr<ExpressionNode> tgt, const std::string& field)
         : ExpressionNode(ASTNodeType::FieldAccess), target(tgt), fieldName(field) {}
@@ -274,8 +274,7 @@ class FunctionCallNode : public ExpressionNode {
 public:
     std::string name; 
     std::vector<std::shared_ptr<ExpressionNode>> args; 
-    
-    std::weak_ptr<DeclarationNode> declarationRef; 
+    int tabIndex = 0;
 
     FunctionCallNode(const std::string& n) : ExpressionNode(ASTNodeType::FuncCall), name(n) {}
     
@@ -375,6 +374,7 @@ class ProcedureCallNode : public StatementNode {
 public:
     std::string name;
     std::vector<std::shared_ptr<ExpressionNode>> args;
+    int tabIndex = 0;
 
     ProcedureCallNode(const std::string& n)
         : StatementNode(ASTNodeType::ProcedureCall), name(n) {}

@@ -20,22 +20,15 @@ var
   kelas: DaftarSiswa;
   i, totalLulus: Integer;
 
-procedure ProsesNilai(idx: Integer; bonus: Integer); { Level 1 }
+procedure ProsesNilai(idx: Integer; bonus: Integer);
 var
-  tempSiswa: Siswa; { Level 1 }
-  
-  { Prosedur yang dibuat DI DALAM prosedur lain }
-  procedure TambahBonusEkstra(ekstra: Integer); { Level 1 }
-  var
-    pengali: Integer; { Level 2 }
-  begin
-    pengali := 2;
-    tempSiswa.nilai[1] := tempSiswa.nilai[1] + (ekstra * pengali);
-  end;
-
+  tempSiswa: Siswa;
 begin
   tempSiswa := kelas[idx];
-  TambahBonusEkstra(5); { Pemanggilan prosedur bersarang }
+  tempSiswa.nilai[1] := tempSiswa.nilai[1] + bonus;
+  
+  if tempSiswa.nilai[1] > 100 then
+    tempSiswa.nilai[1] := 100;
 end;
 
 function CekLulus(s: Siswa): Boolean;
