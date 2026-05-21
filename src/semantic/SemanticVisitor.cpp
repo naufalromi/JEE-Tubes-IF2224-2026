@@ -486,8 +486,6 @@ void SemanticVisitor::visit(RecordTypeNode *node)
     for (auto &field : node->fields) {
         if (field) field->accept(this);
     }
-    
-    int endIdx = symbolTable.tabTop;
 
     int totalRecordSize = 0;
     int currField = symbolTable.btab[symbolTable.currentBlock].last;
@@ -505,7 +503,6 @@ void SemanticVisitor::visit(RecordTypeNode *node)
     }
 
     symbolTable.btab[symbolTable.currentBlock].vsze = totalRecordSize;
-    node->btabRef = symbolTable.currentBlock;
     node->resolvedType = DataType::RECORD;
     node->resolvedRef = symbolTable.currentBlock;
     symbolTable.currentBlock = prevBlock;
