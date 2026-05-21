@@ -474,7 +474,9 @@ std::shared_ptr<ExpressionNode> ASTBuilder::buildVariableAccess(std::shared_ptr<
             bool isArrayAccess = false;
             bool isRecordAccess = false;
             std::shared_ptr<TreeNode> indexListNode = nullptr;
+            std::shared_ptr<TreeNode> indexLocationNode = nullptr;
             std::string fieldName = "";
+            std::shared_ptr<TreeNode> fieldLocationNode = nullptr;
 
             for (const auto& compChild : child->children) {
                 if (compChild->type == NodeType::LBrack) {
@@ -482,12 +484,16 @@ std::shared_ptr<ExpressionNode> ASTBuilder::buildVariableAccess(std::shared_ptr<
                 } 
                 else if (compChild->type == NodeType::IndexList) {
                     indexListNode = compChild;
+                    if (!compChild->children.empty()) {
+                        indexLocationNode = compChild->children.front();
+                    }
                 } 
                 else if (compChild->type == NodeType::Period) {
                     isRecordAccess = true;
                 } 
                 else if (compChild->type == NodeType::Ident && isRecordAccess) {
                     fieldName = compChild->value;
+                    fieldLocationNode = compChild;
                 }
             }
 
@@ -502,13 +508,15 @@ std::shared_ptr<ExpressionNode> ASTBuilder::buildVariableAccess(std::shared_ptr<
                         singleIndex = buildLiteral(idxChild);
                     }
                     if (singleIndex) {
-                        currentAccess = setSourceLocation(std::make_shared<ArrayAccessNode>(currentAccess, singleIndex), child);
+                        auto locationNode = indexLocationNode ? indexLocationNode : child;
+                        currentAccess = setSourceLocation(std::make_shared<ArrayAccessNode>(currentAccess, singleIndex), locationNode);
                     }
                 }
             }
             
             else if (isRecordAccess && !fieldName.empty()) {
-                currentAccess = setSourceLocation(std::make_shared<FieldAccessNode>(currentAccess, fieldName), child);
+                auto locationNode = fieldLocationNode ? fieldLocationNode : child;
+                currentAccess = setSourceLocation(std::make_shared<FieldAccessNode>(currentAccess, fieldName), locationNode);
             }
         }
     }
@@ -674,7 +682,17 @@ std::shared_ptr<AssignmentStatementNode> ASTBuilder::buildAssignmentStatement(st
         }
     }
 
-    return setSourceLocation(std::make_shared<AssignmentStatementNode>(targetVar, valueExpr), node);
+    auto assignNode = std::make_shared<AssignmentStatementNode>(targetVar, valueExpr);
+
+    if (targetVar) {
+        assignNode->line = targetVar->line;
+        assignNode->column = targetVar->column;
+    } else {
+        assignNode->line = node->line;
+        assignNode->column = node->column;
+    }
+
+    return assignNode;
 }
 
 std::shared_ptr<IfStatementNode> ASTBuilder::buildIfStatement(std::shared_ptr<TreeNode> node) {

@@ -1,39 +1,18 @@
-program Declaration;
-
-const
-  PI == 3.14;
-  MaxIterasi == 100;
-
-type
-  Hari == (Senin, Selasa, Rabu, Kamis, Jumat);
-  NilaiUjian == 0..100;
-  
-  Siswa == record
-    nama: String;
-    umur: Integer;
-    nilai: array [1..5] of NilaiUjian;
-  end;
+program test1;
 
 var
-  a : Integer;
-  b : Real;
-  c : Boolean;
+  x: Integer;
 
-procedure Tukar(a, b: Integer; mode: Char);
-var 
-  temp: Integer;
+procedure SetLocal();
+var
+  x: Integer;
 begin
-  if mode == 'X' then
-    temp := a
-end;
-
-function Faktorial(n: Integer): Integer;
-begin
-  if n <= 1 then
-    Faktorial := 1
-  else
-    Faktorial := n * Faktorial(n - 1);
+  x := 10;
+  if x > 5 then
+    x := x + 1;
 end;
 
 begin
+  x := 1;
+  SetLocal();
 end.

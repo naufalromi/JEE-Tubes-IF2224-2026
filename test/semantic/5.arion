@@ -1,0 +1,13 @@
+program test5;
+
+var
+  hasil: Integer;
+  
+function Add(a: Integer; b: Integer): Integer;
+begin
+  Add := a + b;
+end;
+
+begin
+  hasil := Add(2, 3);
+end.

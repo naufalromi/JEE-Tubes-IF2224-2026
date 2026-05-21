@@ -676,6 +676,13 @@ std::shared_ptr<TreeNode> Parser::parseFormalParameterList()
     auto lpar = expect(TokenType::LPARENT, NodeType::LParent, "'('");
     need(node, lpar);
 
+    if (peek().type == TokenType::RPARENT) {
+        auto rpar = expect(TokenType::RPARENT, NodeType::RParent, "')'");
+        need(node, rpar);
+        if (rpar->isError) synchronize();
+        return node;
+    }
+
     auto paramGroup = parseParameterGroup();
     if (paramGroup) {
         need(node, paramGroup);
@@ -1174,6 +1181,11 @@ std::shared_ptr<TreeNode> Parser::parseProcedureCall()
 std::shared_ptr<TreeNode> Parser::parseParameterList()
 {
     auto node = std::make_shared<TreeNode>(NodeType::ParameterList);
+
+    if (peek().type == TokenType::RPARENT) {
+        return node;
+    }
+
     auto firstExpression = parseExpression();
     if (firstExpression)
     {

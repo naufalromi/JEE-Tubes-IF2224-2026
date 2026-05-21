@@ -1,0 +1,8 @@
+program test9;
+
+var
+  angka: Integer;
+
+begin
+  angka := 'teks';
+end.

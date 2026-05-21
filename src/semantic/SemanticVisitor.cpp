@@ -759,6 +759,11 @@ void SemanticVisitor::visit(AssignmentStatementNode *node)
 {
     if (!node) return;
 
+    ASTNode *errorNode = node;
+    if (node->target) {
+        errorNode = node->target.get();
+    }
+
     // Evaluate right-hand side (value)
     if (node->value) {
         node->value->accept(this);
@@ -771,17 +776,17 @@ void SemanticVisitor::visit(AssignmentStatementNode *node)
         if (auto varAccess = std::dynamic_pointer_cast<VarAccessNode>(node->target)) {
             // Constant check
             if (varAccess->isConstant) {
-                reportError(node, "Illegal assignment: '" + varAccess->name + "' is a constant and cannot be modified");
+                reportError(errorNode, "Illegal assignment: '" + varAccess->name + "' is a constant and cannot be modified");
             }
             // Loop counter check
             if (std::find(activeLoopCounters.begin(), activeLoopCounters.end(), varAccess->name) != activeLoopCounters.end()) {
-                reportError(node, "Illegal assignment: FOR loop counter '" + varAccess->name + "' cannot be modified");
+                reportError(errorNode, "Illegal assignment: FOR loop counter '" + varAccess->name + "' cannot be modified");
             }
         }
 
         // Type compatibility check
         if (!isCompatible(node->target->evaluatedType, node->value->evaluatedType)) {
-            reportError(node, "Type mismatch in assignment");
+            reportError(errorNode, "Type mismatch in assignment");
         }
     }
 }

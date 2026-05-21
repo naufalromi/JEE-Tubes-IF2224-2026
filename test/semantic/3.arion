@@ -1,28 +1,20 @@
-program TestTiga;
+program test3;
 
 type
-  DataSiswa == record
-    nomorInduk: integer;
-    kodeKelas: char;
-    nilaiAkhir: real;
-  end;
+  IntArray == array [1..5] of Integer;
 
 var
-  siswa: DataSiswa;
-  i, batas, akumulasi: integer;
+  arr: IntArray;
+  i, total: Integer;
 
 begin
-  batas := 10;
-  akumulasi := 0;
+  arr[1] := 10;
+  arr[2] := 20;
+  arr[3] := 30;
+  total := arr[1] + arr[2] + arr[3];
 
-  for i := 1 to batas do
+  for i := 1 to 3 do
   begin
-    akumulasi := akumulasi + i;
-  end;
-
-  while akumulasi < 100 do
-  begin
-    akumulasi := akumulasi + 15;
-    batas := batas - 1;
+    total := total + arr[i];
   end;
 end.
