@@ -182,6 +182,7 @@ void SemanticVisitor::visit(ProcedureDeclarationNode *node)
     procBlock.psze = 0;
     procBlock.vsze = 0;
     symbolTable.btab.push_back(procBlock);
+    symbolTable.tab[procIndex].ref = symbolTable.btab.size() - 1;
 
     // Pindah masuk ke Scope Prosedur
     currentLevel++;
@@ -279,6 +280,7 @@ void SemanticVisitor::visit(FunctionDeclarationNode *node)
     funcBlock.psze = 0;
     funcBlock.vsze = 0;
     symbolTable.btab.push_back(funcBlock);
+    symbolTable.tab[funcIndex].ref = symbolTable.btab.size() - 1;
 
     // Pindah masuk ke Scope Fungsi
     currentLevel++;
@@ -527,20 +529,28 @@ void SemanticVisitor::visit(RangeTypeNode *node)
 {
     if (!node) return;
 
-    DataType baseType = DataType::UNKNOWN;
+    DataType lowType = DataType::UNKNOWN;
+    DataType highType = DataType::UNKNOWN;
 
-    // Process bounds - just evaluate them, don't create atab entry yet
     if (node->lowBound) {
         node->lowBound->accept(this);
-        baseType = node->lowBound->evaluatedType;  // Get base type (INTEGER, CHAR, etc.)
+        lowType = node->lowBound->evaluatedType; 
     }
-
     if (node->highBound) {
         node->highBound->accept(this);
+        highType = node->highBound->evaluatedType;
     }
 
-    // Store the base type (used by ArrayTypeNode to create atab entry)
-    node->baseType = baseType; 
+    if (lowType != DataType::UNKNOWN && highType != DataType::UNKNOWN) {
+        if (lowType != highType) {
+            reportError(node, "Type compatibility error: Range bounds must have the exact same type.");
+        }
+        else if (lowType != DataType::INTEGER && lowType != DataType::CHAR && lowType != DataType::ENUMERATED) {
+            reportError(node, "Type error: Range bounds must be of ordinal type (Integer, Char, or Enumerated).");
+        }
+    }
+
+    node->baseType = lowType; 
     node->resolvedType = DataType::SUBRANGE;
 }
 
@@ -626,7 +636,7 @@ void SemanticVisitor::visit(ArrayAccessNode *node)
 
         // Bandingkan indeks yang dipakai dengan deklarasi xtyp di atab
         if (expectedIndexType != DataType::UNKNOWN) {
-            if (!isCompatible(expectedIndexType, passedIndexType)) {
+            if (!isCompatible(expectedIndexType, 0, passedIndexType, node->index->evaluatedRef)) {
                 reportError(node, "Array index type mismatch");
             }
         }
@@ -785,8 +795,8 @@ void SemanticVisitor::visit(AssignmentStatementNode *node)
         }
 
         // Type compatibility check
-        if (!isCompatible(node->target->evaluatedType, node->value->evaluatedType)) {
-            reportError(errorNode, "Type mismatch in assignment");
+        if (!isCompatible(node->target->evaluatedType, node->target->evaluatedRef, node->value->evaluatedType, node->value->evaluatedRef)) {
+            reportError(node, "Type mismatch in assignment");
         }
     }
 }
@@ -834,7 +844,7 @@ void SemanticVisitor::visit(CaseStatementNode *node)
                 // Check data type
                 DataType constType = caseConst->evaluatedType;
                 if (exprType != DataType::UNKNOWN && constType != DataType::UNKNOWN) {
-                    if (!isCompatible(exprType, constType)) {
+                    if (!isCompatible(exprType, node->expression->evaluatedRef, constType, caseConst->evaluatedRef)) {
                         reportError(node, "Type mismatch: case label type does not match case expression type");
                     }
                 }
@@ -954,10 +964,31 @@ void SemanticVisitor::visit(ProcedureCallNode *node)
 
     node->tabIndex = index;
 
-    // Evaluate all arguments
-    for (auto &arg : node->args) {
-        if (arg) {
-            arg->accept(this);
+    int blockIdx = symbolTable.tab[index].ref;
+    std::vector<int> expectedParams;
+    int currParam = symbolTable.btab[blockIdx].lpar;
+    while (currParam > index) {
+        expectedParams.push_back(currParam);
+        currParam = symbolTable.tab[currParam].link;
+    }
+    std::reverse(expectedParams.begin(), expectedParams.end());
+    if (node->args.size() != expectedParams.size()) {
+        reportError(node, "Parameter count mismatch for '" + node->name + 
+                          "'. Expected " + std::to_string(expectedParams.size()) + 
+                          ", but got " + std::to_string(node->args.size()));
+    } 
+    else {
+        for (size_t k = 0; k < node->args.size(); ++k) {
+            if (node->args[k]) {
+                node->args[k]->accept(this);
+                int pIdx = expectedParams[k];
+                DataType paramType = symbolTable.tab[pIdx].type;
+                int paramRef = symbolTable.tab[pIdx].ref;
+                if (!isCompatible(paramType, paramRef, node->args[k]->evaluatedType, node->args[k]->evaluatedRef)) {
+                    reportError(node->args[k].get(), "Type mismatch in argument " + std::to_string(k + 1) + 
+                                                     " for procedure '" + node->name + "'");
+                }
+            }
         }
     }
 }
@@ -970,15 +1001,21 @@ void SemanticVisitor::visit(EmptyStatementNode *node)
 
 // ============= HELPER METHODS =============
 
-bool SemanticVisitor::isCompatible(DataType target, DataType source)
+bool SemanticVisitor::isCompatible(DataType target, int targetRef, DataType source, int sourceRef)
 {
-    // Same type is always compatible
-    if (target == source) return true;
+    if (target == source) {
+        if (target == DataType::ARRAY) {
+            if (targetRef != 0 && sourceRef != 0) {
+                bool isSameSize = symbolTable.atab[targetRef].size == symbolTable.atab[sourceRef].size;
+                bool isSameElementType = symbolTable.atab[targetRef].etyp == symbolTable.atab[sourceRef].etyp;
+                return isSameSize && isSameElementType;
+            }
+        }
+        return true; 
+    }
 
-    // Allow some implicit conversions
     if (target == DataType::REAL && source == DataType::INTEGER) return true;
     if (target == DataType::STRING && source == DataType::CHAR) return true;
-
     if (target == DataType::SUBRANGE && source == DataType::INTEGER) return true;
     if (target == DataType::INTEGER && source == DataType::SUBRANGE) return true;
 

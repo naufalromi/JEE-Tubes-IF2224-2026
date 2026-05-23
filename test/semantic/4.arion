@@ -9,6 +9,9 @@ type
 var
   p: Person;
 
+procedure ProsesNilai(var idx: Integer; bonus: Integer);
+var
+  tempSiswa: Siswa;
 begin
   p.nama := 'Budi';
   p.umur := 18;

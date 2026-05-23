@@ -25,7 +25,7 @@ private:
     void reportError(ASTNode* node, const std::string& message);
 
     // Helper: Pengecekan Tipe Data
-    bool isCompatible(DataType target, DataType source);
+    bool isCompatible(DataType target, int targetRef, DataType source, int sourceRef);
     DataType resolveBinaryType(const std::string& op, DataType left, DataType right);
     
     // Helper: Alokasi Memori
