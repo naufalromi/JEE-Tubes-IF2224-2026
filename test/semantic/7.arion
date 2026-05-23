@@ -1,15 +1,9 @@
 program test7;
 
-type
-  Person == record
-    nama: String;
-    umur: Integer;
-  end;
-
 var
-  p: Person;
+  x: Integer;
 
 begin
-  p.nama := 'Budi';
-  p.alamat := 'Bandung';
-end.
+  x := 10;
+  x[1] := 5;
+End.

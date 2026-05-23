@@ -598,6 +598,14 @@ void SemanticVisitor::visit(VarAccessNode *node)
         node->evaluatedType = DataType::UNKNOWN;
     }
     else {
+        ObjectType objKind = symbolTable.tab[index].obj;
+        if (objKind == ObjectType::PROCEDURE || objKind == ObjectType::TYPE) {
+            reportError(node, "Invalid access: '" + node->name + "' is a " + 
+                              (objKind == ObjectType::TYPE ? "type" : "procedure") + 
+                              ", not a variable or constant");
+            node->evaluatedType = DataType::UNKNOWN;
+            return;
+        }
         node->evaluatedType = symbolTable.tab[index].type;
         node->evaluatedRef = symbolTable.tab[index].ref;
         node->tabIndex = index;
@@ -617,6 +625,12 @@ void SemanticVisitor::visit(ArrayAccessNode *node)
 
     if (node->target) {
         node->target->accept(this);
+
+        if (node->target->evaluatedType != DataType::ARRAY) {
+            reportError(node, "Type mismatch: Target variable is not an array");
+            node->evaluatedType = DataType::UNKNOWN;
+            return;
+        }
         
         int atabIndex = node->target->evaluatedRef;
         if (atabIndex != 0) {
@@ -704,15 +718,33 @@ void SemanticVisitor::visit(BinaryOpNode *node)
 
 void SemanticVisitor::visit(UnaryOpNode *node)
 {
-    if (!node) return;
+    if (!node || !node->operand) return;
 
-    // Evaluate operand
-    if (node->operand) {
-        node->operand->accept(this);
-        node->evaluatedType = node->operand->evaluatedType;
-        if (node->evaluatedType == DataType::SUBRANGE) {
-            node->evaluatedType = DataType::INTEGER;
+    // Evaluasi operand
+    node->operand->accept(this);
+    DataType opType = node->operand->evaluatedType;
+    
+    if (opType == DataType::SUBRANGE) {
+        opType = DataType::INTEGER;
+    }
+
+    std::string lowerOp = node->op;
+    std::transform(lowerOp.begin(), lowerOp.end(), lowerOp.begin(), ::tolower);
+
+    if (lowerOp == "not") {
+        if (opType != DataType::BOOLEAN) {
+            reportError(node, "Type mismatch: 'not' operator requires boolean operand");
         }
+        node->evaluatedType = DataType::BOOLEAN;
+    } 
+    else if (lowerOp == "-" || lowerOp == "+") {
+        if (opType != DataType::INTEGER && opType != DataType::REAL) {
+            reportError(node, "Type mismatch: unary sign operator requires numeric operand (Integer/Real)");
+        }
+        node->evaluatedType = opType;
+    } 
+    else {
+        node->evaluatedType = DataType::UNKNOWN;
     }
 }
 
@@ -740,9 +772,31 @@ void SemanticVisitor::visit(FunctionCallNode *node)
     }
 
     // Evaluate all arguments
-    for (auto &arg : node->args) {
-        if (arg) {
-            arg->accept(this);
+    int blockIdx = symbolTable.tab[index].ref;
+    std::vector<int> expectedParams;
+    int currParam = symbolTable.btab[blockIdx].lpar;
+    while (currParam > index + 1) {
+        expectedParams.push_back(currParam);
+        currParam = symbolTable.tab[currParam].link;
+    }
+    std::reverse(expectedParams.begin(), expectedParams.end());
+    if (node->args.size() != expectedParams.size()) {
+        reportError(node, "Parameter count mismatch for '" + node->name + 
+                          "'. Expected " + std::to_string(expectedParams.size()) + 
+                          ", but got " + std::to_string(node->args.size()));
+    } 
+    else {
+        for (size_t k = 0; k < node->args.size(); ++k) {
+            if (node->args[k]) {
+                node->args[k]->accept(this);
+                int pIdx = expectedParams[k];
+                DataType paramType = symbolTable.tab[pIdx].type;
+                int paramRef = symbolTable.tab[pIdx].ref;
+                if (!isCompatible(paramType, paramRef, node->args[k]->evaluatedType, node->args[k]->evaluatedRef)) {
+                    reportError(node->args[k].get(), "Type mismatch in argument " + std::to_string(k + 1) + 
+                                                     " for procedure '" + node->name + "'");
+                }
+            }
         }
     }
 
@@ -967,7 +1021,7 @@ void SemanticVisitor::visit(ProcedureCallNode *node)
     int blockIdx = symbolTable.tab[index].ref;
     std::vector<int> expectedParams;
     int currParam = symbolTable.btab[blockIdx].lpar;
-    while (currParam > index) {
+    while (currParam > index + 1) {
         expectedParams.push_back(currParam);
         currParam = symbolTable.tab[currParam].link;
     }
@@ -1011,6 +1065,9 @@ bool SemanticVisitor::isCompatible(DataType target, int targetRef, DataType sour
                 return isSameSize && isSameElementType;
             }
         }
+        if (target == DataType::RECORD) {
+            return targetRef == sourceRef; 
+        }
         return true; 
     }
 
@@ -1030,10 +1087,20 @@ DataType SemanticVisitor::resolveBinaryType(const std::string &op, DataType left
     if (left == DataType::SUBRANGE) left = DataType::INTEGER;
     if (right == DataType::SUBRANGE) right = DataType::INTEGER;
 
-    // Arithmetic operators: +, -, *, /, mod, div
-    if (lowerOp == "+" || lowerOp == "-" || lowerOp == "*" || lowerOp == "/" || lowerOp == "mod" || lowerOp == "div") {
+    // mod and div only valid for integer
+    if (lowerOp == "mod" || lowerOp == "div") {
+        if (left == DataType::INTEGER && right == DataType::INTEGER) {
+            return DataType::INTEGER;
+        }
+        return DataType::UNKNOWN; 
+    }
+
+    // Arithmetic operators: +, -, *, /
+    if (lowerOp == "+" || lowerOp == "-" || lowerOp == "*" || lowerOp == "/") {
         if ((left == DataType::INTEGER || left == DataType::REAL) &&
             (right == DataType::INTEGER || right == DataType::REAL)) {
+            // / always real
+            if (lowerOp == "/") return DataType::REAL; 
             // Result is REAL if either operand is REAL, otherwise INTEGER
             return (left == DataType::REAL || right == DataType::REAL) ? DataType::REAL : DataType::INTEGER;
         }
@@ -1041,7 +1108,11 @@ DataType SemanticVisitor::resolveBinaryType(const std::string &op, DataType left
 
     // Comparison operators: ==, <>, <, <=, >, >=
     if (lowerOp == "==" || lowerOp == "=" || lowerOp == "<>" || lowerOp == "<" || lowerOp == "<=" || lowerOp == ">" || lowerOp == ">=") {
-        return DataType::BOOLEAN;
+        // only if same data type
+        if (isCompatible(left, 0, right, 0) || isCompatible(right, 0, left, 0)) {
+            return DataType::BOOLEAN;
+        }
+        return DataType::UNKNOWN;
     }
 
     // Logical operators: and, or

@@ -1,8 +1,5 @@
 program test9;
 
-var
-  angka: Integer;
-
 begin
-  angka := 'teks';
+  x := 5;
 end.
