@@ -1,6 +1,6 @@
-# Arion Compiler: Milestone 2 - Syntax Analyzer
+# Arion Compiler: Milestone 3 - Semantic Analyzer
 
-This project implements a custom lexical analyzer and syntax analyzer—developed in GNU C/C++ for the Arion programming language. The lexer reads raw .txt source code in Arion Programming Language and utilizes a Deterministic Finite Automaton (DFA) to convert it into a sequence of meaningful tokens. These tokens are then evaluated by a Recursive Descent parser based on strict non-terminal grammar rules to construct a hierarchical Parse Tree. Additionally, the system incorporates a panic-mode synchronization mechanism for robust syntax error detection and recovery.
+This project implements a custom lexical analyzer, syntax analyzer, and semantic analyzer developed in GNU C/C++ for the Arion programming language. The lexer processes source code with a Deterministic Finite Automaton (DFA), then the Recursive Descent parser builds a Parse Tree from grammar rules. The semantic phase transforms the Parse Tree into a decorated AST and validates program meaning through symbol resolution, type checking, scope handling, and table construction.
 
 This project is part of the IF2224 - Formal Language and Automata Theory course at STEI ITB.
 
@@ -55,14 +55,15 @@ This project is part of the IF2224 - Formal Language and Automata Theory course 
 
 ### This project contains:
 
-1. **Tokenizes Arion Source Code**: Reads `.txt` files containing Arion code and outputs a documented list of tokens.  
-2. **DFA-based Engine**: Processes characters one-by-one entirely based on manual DFA rules.
-3. **Recursive Descent Parser**: Evaluates the tokenized data strictly against 42 non-terminal grammar rules.
-4. **Parse Tree Generator**: Constructs a hierarchical, node-based representation of the validated source code.
-5. **Error Handling**: Implements handler for error in lexical analyzer and syntax analyzer
-4. **No External Libraries**: Built from scratch without the use of any lexer generation tools or libraries.  
-5. **Makefile Integration**: Streamlined compilation using Makefile.  
-6. **Modular Design**: Structured to easily integrate into the future pipeline (Semantic Analysis and Intermediate Code Generation).  
+1. **Tokenizes Arion Source Code**: Converts source text into token streams using a manual DFA-based scanner.
+2. **Recursive Descent Parsing**: Builds Parse Tree structures from Arion grammar rules.
+3. **AST Builder**: Converts Parse Tree into AST nodes used by semantic processing.
+4. **Semantic Validation**: Performs scope resolution, identifier checks, type compatibility checks, function/procedure checks, and assignment validation.
+5. **Symbol Table Suite**: Produces and manages TAB, ATAB, and BTAB structures.
+6. **Decorated AST Output**: Annotates AST nodes with semantic information (types, references, scope levels).
+7. **Error Handling**: Reports lexical, syntax, and semantic errors with source locations.
+8. **Makefile Integration**: Build and run flow through Make targets.
+9. **No External Parser Generators**: Implemented from scratch in C++ without lexer/parser generator tools.
 
 ---
 
@@ -70,39 +71,48 @@ This project is part of the IF2224 - Formal Language and Automata Theory course 
 ```
 .
 ├── README.md
-├── build
-├── data
-├── doc
-│   └── Laporan-2-JEE.pdf
-├── enumref.txt
-├── jeecompiler
-├── makefile
-├── output
-│   └── output.txt
 ├── src
-│   ├── common
-│   │   ├── Error.cpp
-│   │   ├── Error.hpp
-│   │   ├── NodeType.hpp
-│   │   ├── Reader.cpp
-│   │   ├── Reader.hpp
-│   │   ├── Token.cpp
-│   │   ├── Token.hpp
-│   │   ├── Tree.cpp
-│   │   ├── Tree.hpp
-│   │   ├── Writer.cpp
-│   │   └── Writer.hpp
-│   ├── lexer
-│   │   ├── Lexer.cpp
-│   │   ├── Lexer.hpp
-│   │   ├── LexerState.hpp
-│   │   ├── SpecificScanners.cpp
-│   │   └── SpecificScanners.hpp
-│   ├── main.cpp
-│   └── syntax
-│       ├── Parser.cpp
-│       └── Parser.hpp
+│   ├── common
+│   │   ├── DataType.hpp
+│   │   ├── Error.cpp
+│   │   ├── Error.hpp
+│   │   ├── NodeType.hpp
+│   │   ├── ObjectType.hpp
+│   │   ├── Reader.cpp
+│   │   ├── Reader.hpp
+│   │   ├── Token.cpp
+│   │   ├── Token.hpp
+│   │   ├── Tree.cpp
+│   │   ├── Tree.hpp
+│   │   ├── Writer.cpp
+│   │   └── Writer.hpp
+│   ├── lexer
+│   │   ├── Lexer.cpp
+│   │   ├── Lexer.hpp
+│   │   ├── LexerState.hpp
+│   │   ├── SpecificScanners.cpp
+│   │   └── SpecificScanners.hpp
+│   ├── semantic
+│   │   ├── ASTBuilder.cpp
+│   │   ├── ASTBuilder.hpp
+│   │   ├── ASTNode.hpp
+│   │   ├── ASTPrinter.cpp
+│   │   ├── ASTPrinter.hpp
+│   │   ├── ASTVisitor.hpp
+│   │   ├── SemanticAnalyzer.cpp
+│   │   ├── SemanticAnalyzer.hpp
+│   │   ├── SemanticVisitor.cpp
+│   │   ├── SemanticVisitor.hpp
+│   │   ├── SymbolTable.cpp
+│   │   └── SymbolTable.hpp
+│   ├── syntax
+│   │   ├── Parser.cpp
+│   │   └── Parser.hpp
+│   └── main.cpp
 └── test
+   ├── lexer
+   ├── parser
+   └── semantic
 ```
 ---
 
@@ -151,7 +161,7 @@ g++ --version && make --version
 git clone https://github.com/naufalromi/JEE-Tubes-IF2224-2026.git
 ```
 
-2. Navigate to the source directory and compile
+2. Navigate to the repository and build
 
 ```bash
 cd JEE-Tubes-IF2224-2026
@@ -159,11 +169,23 @@ make clean
 make all
 ```
 
-3. Run the lexer program
+3. Run the compiler
 
 ```bash
 make run
 ```
+
+4. Choose analysis mode in the interactive menu:
+- `1` Lexical Analyzer
+- `2` Syntax Analyzer
+- `3` Semantic Analyzer
+
+5. Choose testcase number based on the selected mode folder.
+
+Semantic mode will:
+- Build and analyze the decorated AST
+- Print semantic errors when present
+- Allow semantic display options (Decorated AST, TAB, ATAB, BTAB, or all)
 
 <div align="center">
 
