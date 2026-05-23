@@ -33,7 +33,7 @@ int main()
             inputPath = "test/lexer/" + std::to_string(filenum) + ".arion";
         } 
         else if (typeChoice == 2) {
-            inputPath = "test/parser/" + std::to_string(filenum) + ".arion";
+            inputPath = "test/semantic/" + std::to_string(filenum) + ".arion";
         } 
         else if (typeChoice == 3) {
             inputPath = "test/semantic/" + std::to_string(filenum) + ".arion";

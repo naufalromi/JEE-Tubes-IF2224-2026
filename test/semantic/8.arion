@@ -1,9 +1,8 @@
-program test8;
+program test9;
 
 var
-  x: Integer;
+  angka: Integer;
 
 begin
-  x := 10;
-  x[1] := 5;
-end.
+  angka := 'teks';
+End.

@@ -6,7 +6,6 @@
 #include <string>
 #include <vector>
 
-// 1. AST Node Types (Fokus pada Struktur Atas & Deklarasi)
 enum class ASTNodeType {
     Program, BlockNode,
     // Declaration
