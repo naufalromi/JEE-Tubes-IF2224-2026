@@ -7,12 +7,19 @@ TARGET = jeecompiler
 
 SRC_DIR = src
 BUILD_DIR = build
+CODEGEN_DIR = src/codegen
+INTERPRETER_DIR = src/interpreter
+
+CODEGEN_BUILD_DIR = build/codegen
+INTERPRETER_BUILD_DIR = build/interpreter
 
 SRCS = $(SRC_DIR)/main.cpp\
 	   $(wildcard $(SRC_DIR)/common/*.cpp)\
 	   $(wildcard $(SRC_DIR)/lexer/*.cpp)\
 	   $(wildcard $(SRC_DIR)/syntax/*.cpp)\
-	   $(wildcard $(SRC_DIR)/semantic/*.cpp)
+	   $(wildcard $(SRC_DIR)/semantic/*.cpp)\
+	   $(wildcard $(CODEGEN_DIR)/*.cpp)\
+	   $(wildcard $(INTERPRETER_DIR)/*.cpp)
 
 # Menentuka file Object (.o)
 # Mengubah path src/xxx/file.cpp menjadi build/xxx/file.o
