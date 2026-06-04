@@ -1058,12 +1058,18 @@ void SemanticVisitor::visit(ProcedureCallNode *node)
     if (!node) return;
     node->scopeLevel = currentLevel;
 
+    std::string lowerName = node->name;
+    std::transform(lowerName.begin(), lowerName.end(), lowerName.begin(), ::tolower);
+
     int searchLimit = symbolTable.btab[currentVisibilityBlock].last;
     int index = 0;
 
     int i = searchLimit;
     while (i > 0) {
-        if (symbolTable.tab[i].name == node->name && symbolTable.tab[i].obj == ObjectType::PROCEDURE) {
+        std::string tableName = symbolTable.tab[i].name;
+        std::transform(tableName.begin(), tableName.end(), tableName.begin(), ::tolower);
+
+        if (tableName == lowerName && symbolTable.tab[i].obj == ObjectType::PROCEDURE) {
             index = i;
             break;
         }
@@ -1076,6 +1082,15 @@ void SemanticVisitor::visit(ProcedureCallNode *node)
     }
 
     node->tabIndex = index;
+
+    if (lowerName == "write" || lowerName == "writeln") {
+        for (auto& arg : node->args) {
+            if (arg) {
+                arg->accept(this);
+            }
+        }
+        return;
+    }
 
     int blockIdx = symbolTable.tab[index].ref;
     std::vector<int> expectedParams;
