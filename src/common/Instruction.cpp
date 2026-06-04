@@ -14,6 +14,9 @@ std::string opCodeToString(OpCode op)
         case OpCode::JPC: return "JPC";
         case OpCode::OPR: return "OPR";
         case OpCode::RET: return "RET";
+        case OpCode::LDA: return "LDA";
+        case OpCode::LDI: return "LDI";
+        case OpCode::STI: return "STI";
         default: return "UNKNOWN";
     }
 }

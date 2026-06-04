@@ -13,7 +13,10 @@ enum class OpCode {
     JMP,
     JPC,
     OPR,
-    RET
+    RET,
+    LDA,
+    LDI,
+    STI 
 };
 
 enum class OperatorCode {
