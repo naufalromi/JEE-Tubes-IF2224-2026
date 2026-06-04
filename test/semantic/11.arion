@@ -1,0 +1,13 @@
+program echo;
+
+var
+  userInput: String;
+
+begin
+  write('Please enter some text: ');
+  
+  readln(userInput);
+  
+  write('You entered: ');
+  writeln(userInput);
+end.

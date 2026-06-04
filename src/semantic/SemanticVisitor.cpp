@@ -1091,6 +1091,21 @@ void SemanticVisitor::visit(ProcedureCallNode *node)
         }
         return;
     }
+    if (lowerName == "read" || lowerName == "readln") {
+        for (auto& arg : node->args) {
+            if (arg) {
+                arg->accept(this);
+                auto varAccess = std::dynamic_pointer_cast<VarAccessNode>(arg);
+                
+                if (!varAccess) {
+                    reportError(arg.get(), "Semantic Error: Argument for '" + lowerName + "' must be a variable.");
+                } else if (varAccess->isConstant) {
+                    reportError(arg.get(), "Semantic Error: Cannot read into constant '" + varAccess->name + "'.");
+                }
+            }
+        }
+        return;
+    }
 
     int blockIdx = symbolTable.tab[index].ref;
     std::vector<int> expectedParams;

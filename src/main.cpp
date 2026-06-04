@@ -152,6 +152,7 @@ int main()
                     } 
                     else if (typeChoice == 5) {
                         std::cout << "\n========== EXECUTING ARION PROGRAM ==========\n";
+                        std::cin.ignore(10000, '\n');
                         Interpreter vm(codegen.getInstructions());
                         try {
                             vm.run(std::cout);

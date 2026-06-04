@@ -371,6 +371,21 @@ void CodeGenerator::visit(ProcedureCallNode* node) {
             emit(OpCode::OPR, 0, oprCode);
         }
     } 
+    else if (funcName == "readln" || funcName == "read") {
+        for (auto& arg : node->args) {
+            emit(OpCode::OPR, 0, 15); 
+            
+            if (auto varNode = std::dynamic_pointer_cast<VarAccessNode>(arg)) {
+                int index = varNode->tabIndex;
+                int lev = symbolTable->tab[index].lev;
+                int adr = symbolTable->tab[index].adr;
+                
+                emit(OpCode::STO, lev, adr);
+            } else {
+                std::cerr << "CodeGen Error: readln argument must be a variable.\n";
+            }
+        }
+    }
     else {
         for (auto& arg : node->args) arg->accept(this);
         

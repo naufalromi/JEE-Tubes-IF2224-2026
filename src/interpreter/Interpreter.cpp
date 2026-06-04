@@ -4,7 +4,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <type_traits>
-
+#include <iostream>
 namespace {
 int lineOf(const Instruction& instr)
 {
@@ -274,6 +274,31 @@ void Interpreter::executeOpr(int op, int line, std::ostream& out)
             std::string text = runtimeValueToString(value);
             output += text + "\n";
             out << text << '\n';
+            break;
+        }
+
+        case OperatorCode::READLN: {
+            std::string rawInput;
+            std::getline(std::cin, rawInput);
+            try {
+                size_t pos;
+                int intVal = std::stoi(rawInput, &pos);
+                if (pos == rawInput.length()) {
+                    push(intVal, line);
+                    break;
+                }
+            } catch (...) {}
+
+            try {
+                size_t pos;
+                double doubleVal = std::stod(rawInput, &pos);
+                if (pos == rawInput.length()) {
+                    push(doubleVal, line);
+                    break;
+                }
+            } catch (...) {}
+
+            push(rawInput, line);
             break;
         }
 
