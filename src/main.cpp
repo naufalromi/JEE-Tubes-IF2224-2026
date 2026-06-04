@@ -142,7 +142,7 @@ int main()
                     codegen.generate(decoratedAST.get());
                     
                     if (typeChoice == 4) {
-                        std::string bytecodePath = inputPath.substr(0, inputPath.find_last_of('.')) + ".aobj";
+                        std::string bytecodePath = inputPath.substr(0, inputPath.find_last_of('.')) + ".ic";
                         if (codegen.exportToFile(bytecodePath)) {
                             std::cout << "\n[+] Success generated object file to: " << bytecodePath << "\n";
                         } else {
