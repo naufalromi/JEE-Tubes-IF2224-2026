@@ -298,7 +298,18 @@ void CodeGenerator::visit(RepeatUntilNode* node) {
 void CodeGenerator::visit(ForLoopNode* node) {
     if (!node) return;
 
-    int index = symbolTable->lookup(node->counterVar, symbolTable->btab[node->scopeLevel].last);
+    int index = 0;
+    for (int i = symbolTable->tabTop; i > 0; i = symbolTable->tab[i].link) {
+        if (symbolTable->tab[i].name == node->counterVar && symbolTable->tab[i].obj == ObjectType::VARIABLE) {
+            index = i;
+            break;
+        }
+    }
+
+    if (index == 0) {
+        return;
+    }
+
     int counterAdr = symbolTable->tab[index].adr;
     int counterLev = symbolTable->tab[index].lev;
 
