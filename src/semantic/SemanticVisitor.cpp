@@ -8,9 +8,6 @@ void SemanticVisitor::reportError(ASTNode *node, const std::string &message)
     errors.push_back(err);
 }
 
-/**
- * Visit Head Program
- */
 void SemanticVisitor::visit(ProgramNode *node)
 {
     currentLevel = 0;
@@ -26,21 +23,38 @@ void SemanticVisitor::visit(ProgramNode *node)
     symbolTable.currentBlock = 0;
     currentVisibilityBlock = 0;
 
-    // Hitung ukuran memori variabel global (vsze)
-    int totalGlobalMemory = 0;
-    int curr = symbolTable.btab[0].last;
+    int globalBlockEnd = symbolTable.btab[0].last;
+    int curr = globalBlockEnd;
 
+    // 1. Kumpulkan indeks variabel global dan balik urutannya (First-Declared, First-Addressed)
+    std::vector<int> globalVars;
     while (curr > globalBlockStart) {
         if (symbolTable.tab[curr].lev == 0 && symbolTable.tab[curr].obj == ObjectType::VARIABLE) {
-            if (symbolTable.tab[curr].type == DataType::ARRAY) {
-                totalGlobalMemory += symbolTable.atab[symbolTable.tab[curr].ref].size;
-            } else if (symbolTable.tab[curr].type == DataType::RECORD) {
-                totalGlobalMemory += symbolTable.btab[symbolTable.tab[curr].ref].vsze;
-            } else {
-                totalGlobalMemory += getDataTypeSize(symbolTable.tab[curr].type);
-            }   
+            globalVars.push_back(curr);
         }
         curr = symbolTable.tab[curr].link;
+    }
+    std::reverse(globalVars.begin(), globalVars.end());
+
+    // 2. Hitung ukuran dan assign 'adr'
+    int totalGlobalMemory = 0;
+    int currentOffset = 3; // Laci 0, 1, 2 dipesan untuk Static Link, Dynamic Link, Return Address
+
+    for (int varIndex : globalVars) {
+        int size = 0;
+        if (symbolTable.tab[varIndex].type == DataType::ARRAY) {
+            size = symbolTable.atab[symbolTable.tab[varIndex].ref].size;
+        } else if (symbolTable.tab[varIndex].type == DataType::RECORD) {
+            size = symbolTable.btab[symbolTable.tab[varIndex].ref].vsze;
+        } else {
+            size = getDataTypeSize(symbolTable.tab[varIndex].type);
+        }
+        
+        // Assign address untuk variabel ini
+        symbolTable.tab[varIndex].adr = currentOffset;
+        
+        currentOffset += size;
+        totalGlobalMemory += size;
     }
     
     // Simpan ukuran total memori variabel global
@@ -54,18 +68,6 @@ void SemanticVisitor::visit(ProgramNode *node)
     node->scopeLevel = currentLevel;
 }
 
-/**
- * block.node = new BlockNode(declaration_part.node_list, compound_statement.node)
- *
- * BlockNode berisi:
- * - declarations: list of declaration nodes (Const, Type, Var, Procedure, Function)
- * - statements: compound statement (begin...end)
- *
- * Proses:
- * 1. Create block table entry for this block (main compound block)
- * 2. Process all declarations in this block
- * 3. Process compound statement body
- */
 void SemanticVisitor::visit(BlockNode *node)
 {
     if (!node) return;
@@ -186,10 +188,10 @@ void SemanticVisitor::visit(ProcedureDeclarationNode *node)
 
     // Pindah masuk ke Scope Prosedur
     currentLevel++;
-    int prevBlock = symbolTable.currentBlock; // Simpan alamat scope parent
+    int prevBlock = symbolTable.currentBlock;
     int prevVisibility = currentVisibilityBlock;
 
-    symbolTable.currentBlock = symbolTable.btab.size() - 1; // Pindah ke block baru
+    symbolTable.currentBlock = symbolTable.btab.size() - 1;
     currentVisibilityBlock = symbolTable.currentBlock;
 
     int initialLastIndex = procBlock.last;
@@ -199,25 +201,36 @@ void SemanticVisitor::visit(ProcedureDeclarationNode *node)
         param->accept(this); 
     }
 
-    // Hitung Parameter Metrics (lpar & psze)
+    // Hitung Parameter Size
     int paramLastIndex = symbolTable.btab[symbolTable.currentBlock].last;
-    int totalParamMemory = 0;
     int currParam = paramLastIndex;
-
+    
+    std::vector<int> paramVars;
     while (currParam > initialLastIndex) {
         if (symbolTable.tab[currParam].obj == ObjectType::VARIABLE) {
-            if (symbolTable.tab[currParam].type == DataType::ARRAY) {
-                int arrayRef = symbolTable.tab[currParam].ref;
-                totalParamMemory += symbolTable.atab[arrayRef].size;
-            } else if (symbolTable.tab[currParam].type == DataType::RECORD) {
-                int recordRef = symbolTable.tab[currParam].ref;
-                totalParamMemory += symbolTable.btab[recordRef].vsze;
-            } else {
-                totalParamMemory += getDataTypeSize(symbolTable.tab[currParam].type);
-            }
+            paramVars.push_back(currParam);
         }
         currParam = symbolTable.tab[currParam].link;
     }
+    std::reverse(paramVars.begin(), paramVars.end());
+
+    int totalParamMemory = 0;
+    int currentOffset = 3; // Parameter mulai di laci 3
+
+    for (int pIndex : paramVars) {
+        int size = 0;
+        if (symbolTable.tab[pIndex].type == DataType::ARRAY) {
+            size = symbolTable.atab[symbolTable.tab[pIndex].ref].size;
+        } else if (symbolTable.tab[pIndex].type == DataType::RECORD) {
+            size = symbolTable.btab[symbolTable.tab[pIndex].ref].vsze;
+        } else {
+            size = getDataTypeSize(symbolTable.tab[pIndex].type);
+        }
+        symbolTable.tab[pIndex].adr = currentOffset;
+        currentOffset += size;
+        totalParamMemory += size;
+    }
+
     symbolTable.btab[symbolTable.currentBlock].lpar = paramLastIndex;
     symbolTable.btab[symbolTable.currentBlock].psze = totalParamMemory;
 
@@ -226,25 +239,35 @@ void SemanticVisitor::visit(ProcedureDeclarationNode *node)
         node->body->accept(this); 
     }
 
-    // Hitung Local Variables Metrics (vsze)
+    // Hitung Local Variable Size
     int finalLastIndex = symbolTable.btab[symbolTable.currentBlock].last;
-    int totalLocalMemory = 0;
     int currLocal = finalLastIndex;
 
+    std::vector<int> localVars;
     while (currLocal > paramLastIndex) {
         if (symbolTable.tab[currLocal].obj == ObjectType::VARIABLE) {
-            if (symbolTable.tab[currLocal].type == DataType::ARRAY) {
-                int arrayRef = symbolTable.tab[currLocal].ref;
-                totalLocalMemory += symbolTable.atab[arrayRef].size;
-            } else if (symbolTable.tab[currLocal].type == DataType::RECORD) {
-                int recordRef = symbolTable.tab[currLocal].ref;
-                totalLocalMemory += symbolTable.btab[recordRef].vsze;
-            } else {
-                totalLocalMemory += getDataTypeSize(symbolTable.tab[currLocal].type);
-            }
+            localVars.push_back(currLocal);
         }
         currLocal = symbolTable.tab[currLocal].link;
     }
+    std::reverse(localVars.begin(), localVars.end());
+
+    int totalLocalMemory = 0;
+
+    for (int lIndex : localVars) {
+        int size = 0;
+        if (symbolTable.tab[lIndex].type == DataType::ARRAY) {
+            size = symbolTable.atab[symbolTable.tab[lIndex].ref].size;
+        } else if (symbolTable.tab[lIndex].type == DataType::RECORD) {
+            size = symbolTable.btab[symbolTable.tab[lIndex].ref].vsze;
+        } else {
+            size = getDataTypeSize(symbolTable.tab[lIndex].type);
+        }
+        symbolTable.tab[lIndex].adr = currentOffset;
+        currentOffset += size;
+        totalLocalMemory += size;
+    }
+
     node->localVariablesSize = totalLocalMemory;
     symbolTable.btab[symbolTable.currentBlock].vsze = totalLocalMemory;
 
@@ -290,10 +313,26 @@ void SemanticVisitor::visit(FunctionDeclarationNode *node)
     symbolTable.currentBlock = symbolTable.btab.size() - 1;
     currentVisibilityBlock = symbolTable.currentBlock;
 
-    // Register function name sebagai local variable
+    // Register function name sebagai local variable (untuk menampung Return Value)
     int nameIndex = symbolTable.enter(node->name, ObjectType::VARIABLE, returnType, currentLevel);
     if (nameIndex == -1) {
         reportError(node, "Failed to register function name in local scope: " + node->name);
+    }
+
+    int currentOffset = 3;
+    
+    // Assign adr untuk variabel nama fungsi (Laci 3)
+    if (nameIndex != -1) {
+        int nameSize = 0;
+        if (symbolTable.tab[nameIndex].type == DataType::ARRAY) {
+            nameSize = symbolTable.atab[symbolTable.tab[nameIndex].ref].size;
+        } else if (symbolTable.tab[nameIndex].type == DataType::RECORD) {
+            nameSize = symbolTable.btab[symbolTable.tab[nameIndex].ref].vsze;
+        } else {
+            nameSize = getDataTypeSize(symbolTable.tab[nameIndex].type);
+        }
+        symbolTable.tab[nameIndex].adr = currentOffset;
+        currentOffset += nameSize;
     }
 
     int initialLastIndex = symbolTable.btab[symbolTable.currentBlock].last;
@@ -303,25 +342,35 @@ void SemanticVisitor::visit(FunctionDeclarationNode *node)
         param->accept(this); 
     }
 
-    // Hitung Parameter Metrics
+    // Hitung Parameter size
     int paramLastIndex = symbolTable.btab[symbolTable.currentBlock].last;
-    int totalParamMemory = 0;
     int currParam = paramLastIndex;
 
+    std::vector<int> paramVars;
     while (currParam > initialLastIndex) {
         if (symbolTable.tab[currParam].obj == ObjectType::VARIABLE) {
-            if (symbolTable.tab[currParam].type == DataType::ARRAY) {
-                int arrayRef = symbolTable.tab[currParam].ref;
-                totalParamMemory += symbolTable.atab[arrayRef].size;
-            } else if (symbolTable.tab[currParam].type == DataType::RECORD) {
-                int recordRef = symbolTable.tab[currParam].ref;
-                totalParamMemory += symbolTable.btab[recordRef].vsze;
-            } else {
-                totalParamMemory += getDataTypeSize(symbolTable.tab[currParam].type);
-            }
+            paramVars.push_back(currParam);
         }
         currParam = symbolTable.tab[currParam].link;
     }
+    std::reverse(paramVars.begin(), paramVars.end());
+
+    int totalParamMemory = 0;
+
+    for (int pIndex : paramVars) {
+        int size = 0;
+        if (symbolTable.tab[pIndex].type == DataType::ARRAY) {
+            size = symbolTable.atab[symbolTable.tab[pIndex].ref].size;
+        } else if (symbolTable.tab[pIndex].type == DataType::RECORD) {
+            size = symbolTable.btab[symbolTable.tab[pIndex].ref].vsze;
+        } else {
+            size = getDataTypeSize(symbolTable.tab[pIndex].type);
+        }
+        symbolTable.tab[pIndex].adr = currentOffset;
+        currentOffset += size;
+        totalParamMemory += size;
+    }
+    
     symbolTable.btab[symbolTable.currentBlock].lpar = paramLastIndex;
     symbolTable.btab[symbolTable.currentBlock].psze = totalParamMemory;
 
@@ -330,25 +379,35 @@ void SemanticVisitor::visit(FunctionDeclarationNode *node)
         node->body->accept(this); 
     }
 
-    // Hitung Local Variables Metrics
+    // Hitung Local Variable Size
     int finalLastIndex = symbolTable.btab[symbolTable.currentBlock].last;
-    int totalLocalMemory = 0;
     int currLocal = finalLastIndex;
 
+    std::vector<int> localVars;
     while (currLocal > paramLastIndex) {
         if (symbolTable.tab[currLocal].obj == ObjectType::VARIABLE) {
-            if (symbolTable.tab[currLocal].type == DataType::ARRAY) {
-                int arrayRef = symbolTable.tab[currLocal].ref;
-                totalLocalMemory += symbolTable.atab[arrayRef].size;
-            } else if (symbolTable.tab[currLocal].type == DataType::RECORD) {
-                int recordRef = symbolTable.tab[currLocal].ref;
-                totalLocalMemory += symbolTable.btab[recordRef].vsze;
-            } else {
-                totalLocalMemory += getDataTypeSize(symbolTable.tab[currLocal].type);
-            }
+            localVars.push_back(currLocal);
         }
         currLocal = symbolTable.tab[currLocal].link;
     }
+    std::reverse(localVars.begin(), localVars.end());
+
+    int totalLocalMemory = 0;
+
+    for (int lIndex : localVars) {
+        int size = 0;
+        if (symbolTable.tab[lIndex].type == DataType::ARRAY) {
+            size = symbolTable.atab[symbolTable.tab[lIndex].ref].size;
+        } else if (symbolTable.tab[lIndex].type == DataType::RECORD) {
+            size = symbolTable.btab[symbolTable.tab[lIndex].ref].vsze;
+        } else {
+            size = getDataTypeSize(symbolTable.tab[lIndex].type);
+        }
+        symbolTable.tab[lIndex].adr = currentOffset;
+        currentOffset += size;
+        totalLocalMemory += size;
+    }
+
     node->localVariablesSize = totalLocalMemory;
     symbolTable.btab[symbolTable.currentBlock].vsze = totalLocalMemory;
 
@@ -731,7 +790,7 @@ void SemanticVisitor::visit(UnaryOpNode *node)
     std::string lowerOp = node->op;
     std::transform(lowerOp.begin(), lowerOp.end(), lowerOp.begin(), ::tolower);
 
-    if (lowerOp == "not") {
+    if (lowerOp == "not") { 
         if (opType != DataType::BOOLEAN) {
             reportError(node, "Type mismatch: 'not' operator requires boolean operand");
         }

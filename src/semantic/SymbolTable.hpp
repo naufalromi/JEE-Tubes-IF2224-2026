@@ -11,7 +11,7 @@ struct TabEntry {
     int ref;            // indeks ke atab atau btab
     int nrm;            // 1 = normal, 0 = by-reference
     int lev;            // lexical level (0 = global, 1 = dalam prosedur, 2 = dalam prosedur di dalam prosedur, dst)
-    long adr;           // nilai/alamat/offset
+    int adr;           // nilai/alamat/offset
 };
 
 struct AtabEntry {
@@ -43,7 +43,7 @@ public:
     int currentBlock = 0;
 
     int enter(std::string name, ObjectType kind, DataType type, int lev);
-    int lookup(std::string name, int lastIndex);
+    int lookup(std::string name, int lastIndex) const;
     
     SymbolTable() {
         tab.resize(33);

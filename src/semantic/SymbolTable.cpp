@@ -48,7 +48,7 @@ void SymbolTable::initPredefined()
     enter("False", ObjectType::CONSTANT, DataType::BOOLEAN, 0);
 };
 
-int SymbolTable::lookup(std::string name, int lastIndex)
+int SymbolTable::lookup(std::string name, int lastIndex) const
 {
     int i = lastIndex;
     while (i > 0) {
