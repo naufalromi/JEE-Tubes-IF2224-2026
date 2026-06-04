@@ -7,10 +7,10 @@
 #include "semantic/ASTPrinter.hpp"
 #include "semantic/SemanticAnalyzer.hpp"
 #include "codegen/CodeGenerator.hpp"
+#include "interpreter/Interpreter.hpp" 
 #include <fstream>
 #include <iostream>
 #include <memory>
-
 
 int main()
 {
@@ -22,10 +22,11 @@ int main()
         int filenum;
         int typeChoice;
 
-        std::cout << "1. Lexical Analyzer" << std::endl;
+        std::cout << "\n1. Lexical Analyzer" << std::endl;
         std::cout << "2. Syntax Analyzer" << std::endl;
         std::cout << "3. Semantic Analyzer" << std::endl;
         std::cout << "4. Intermediate Code Generator" << std::endl;
+        std::cout << "5. Interpreter (Run Program)" << std::endl;
         std::cout << "Choose Type: ";
         std::cin >> typeChoice;
         std::cout << "Choose Testcase: ";
@@ -37,11 +38,12 @@ int main()
         else if (typeChoice == 2) {
             inputPath = "test/semantic/" + std::to_string(filenum) + ".arion";
         } 
-        else if (typeChoice == 3) {
+        else if (typeChoice >= 3 && typeChoice <= 5) {
             inputPath = "test/semantic/" + std::to_string(filenum) + ".arion";
         } 
-        else if (typeChoice == 4) {
-            inputPath = "test/semantic/" + std::to_string(filenum) + ".arion";
+        else {
+            std::cout << "Invalid choice\n";
+            continue;
         }
 
         try
@@ -104,8 +106,8 @@ int main()
 
                 if (analyzer.hasErrors()) {
                     std::cout << "[!] Semantic analysis completed with errors.\n";
-                    if (typeChoice == 4) {
-                        std::cout << "[!] Cannot generate code with semantic errors.\n";
+                    if (typeChoice >= 4) {
+                        std::cout << "[!] Cannot generate or run code with semantic errors.\n";
                         return 1;
                     }
                 }
@@ -134,24 +136,34 @@ int main()
                     return 0;
                 }
 
-                if (typeChoice == 4) {
+                if (typeChoice == 4 || typeChoice == 5) {
                     const SymbolTable* symTab = &(analyzer.getSymbolTable());
                     CodeGenerator codegen(symTab);
                     codegen.generate(decoratedAST.get());
-                    std::string bytecodePath = inputPath.substr(0, inputPath.find_last_of('.')) + ".aobj";
-                    if (codegen.exportToFile(bytecodePath)) {
-                        std::cout << "\n[+] Success generated object file to: " << bytecodePath << "\n";
-                    } else {
-                        std::cout << "\n[-] Failed to save object file.\n";
-                        return 1;
-                    }
                     
+                    if (typeChoice == 4) {
+                        std::string bytecodePath = inputPath.substr(0, inputPath.find_last_of('.')) + ".aobj";
+                        if (codegen.exportToFile(bytecodePath)) {
+                            std::cout << "\n[+] Success generated object file to: " << bytecodePath << "\n";
+                        } else {
+                            std::cout << "\n[-] Failed to save object file.\n";
+                            return 1;
+                        }
+                    } 
+                    else if (typeChoice == 5) {
+                        std::cout << "\n========== EXECUTING ARION PROGRAM ==========\n";
+                        Interpreter vm(codegen.getInstructions());
+                        try {
+                            vm.run(std::cout);
+                            std::cout << "\n========== EXECUTION FINISHED ==========\n";
+                        } catch (const std::exception& e) {
+                            std::cerr << "\n[!] Runtime Error: " << e.what() << "\n";
+                            return 1;
+                        }
+                    }
                     return 0;
                 }
             }
-
-            std::cout << "Invalid choice\n";
-            return 0;
         }
         catch (const std::exception &e)
         {

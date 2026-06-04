@@ -396,7 +396,10 @@ bool CodeGenerator::exportToFile(const std::string& filename) const {
         return false;
     }
 
-    for (const auto& instr : instructions) {
+    for (size_t i = 0; i < instructions.size(); ++i) {
+        const auto& instr = instructions[i];
+        
+        outFile << i << " ";
         outFile << opCodeToString(instr.op) << " ";
         outFile << instr.level << " ";
         
