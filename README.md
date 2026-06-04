@@ -1,6 +1,6 @@
-# Arion Compiler: Milestone 3 - Semantic Analyzer
+# Arion Compiler: Milestone 4 & 5 - Intermediate Code Generator & Interpreter
 
-This project implements a custom lexical analyzer, syntax analyzer, and semantic analyzer developed in GNU C/C++ for the Arion programming language. The lexer processes source code with a Deterministic Finite Automaton (DFA), then the Recursive Descent parser builds a Parse Tree from grammar rules. The semantic phase transforms the Parse Tree into a decorated AST and validates program meaning through symbol resolution, type checking, scope handling, and table construction.
+This project implements a complete custom compiler and virtual machine developed in GNU C/C++ for the Arion programming language. The pipeline includes a lexical analyzer, a Recursive Descent syntax parser, a semantic analyzer, an Intermediate Code (IC) generator, and a custom Stack-based Virtual Machine (Interpreter). 
 
 This project is part of the IF2224 - Formal Language and Automata Theory course at STEI ITB.
 
@@ -53,39 +53,51 @@ This project is part of the IF2224 - Formal Language and Automata Theory course 
 
 ## Features
 
-### This project contains:
+### This project contains a full Front-End to Back-End pipeline:
 
-1. **Tokenizes Arion Source Code**: Converts source text into token streams using a manual DFA-based scanner.
+1. **Tokenization (Lexer)**: Converts source text into token streams using a manual DFA-based scanner.
 2. **Recursive Descent Parsing**: Builds Parse Tree structures from Arion grammar rules.
-3. **AST Builder**: Converts Parse Tree into AST nodes used by semantic processing.
-4. **Semantic Validation**: Performs scope resolution, identifier checks, type compatibility checks, function/procedure checks, and assignment validation.
-5. **Symbol Table Suite**: Produces and manages TAB, ATAB, and BTAB structures.
-6. **Decorated AST Output**: Annotates AST nodes with semantic information (types, references, scope levels).
-7. **Error Handling**: Reports lexical, syntax, and semantic errors with source locations.
-8. **Makefile Integration**: Build and run flow through Make targets.
-9. **No External Parser Generators**: Implemented from scratch in C++ without lexer/parser generator tools.
+3. **Semantic Validation**: Performs scope resolution, type compatibility checks, and constructs TAB, ATAB, and BTAB symbol tables.
+4. **Intermediate Code Generation**: Traverses the Decorated AST to synthesize flat, Three-Address Code (TAC) instructions (e.g., `LOD`, `STO`, `JMP`, `JPC`, `OPR`).
+5. **Stack-Based Virtual Machine (Interpreter)**: A custom execution engine featuring a Program Counter, Stack Pointer, and Base Pointer to manage memory, variable scopes (Static/Dynamic links), and subroutine calls.
+6. **File-Based Execution**: Includes an `ICParser` capable of loading and executing standalone `.ic` bytecode files.
+7. **Runtime Error Handling**: Active VM protection against stack overflow, stack underflow, invalid jump targets, and division by zero.
+8. **Interactive I/O**: Full support for `readln`, `read`, `writeln`, and `write` standard procedures.
+9. **No External Generators**: Implemented entirely from scratch in C++ without tools like Lex or Yacc.
 
 ---
 
 ## Repository Structure
-```
+```text
 .
 ├── README.md
 ├── src
+│   ├── codegen
+│   │   ├── CodeGenerator.cpp
+│   │   └── CodeGenerator.hpp
 │   ├── common
 │   │   ├── DataType.hpp
 │   │   ├── Error.cpp
 │   │   ├── Error.hpp
+│   │   ├── Instruction.cpp
+│   │   ├── Instruction.hpp
 │   │   ├── NodeType.hpp
 │   │   ├── ObjectType.hpp
 │   │   ├── Reader.cpp
 │   │   ├── Reader.hpp
+│   │   ├── RuntimeValue.cpp
+│   │   ├── RuntimeValue.hpp
 │   │   ├── Token.cpp
 │   │   ├── Token.hpp
 │   │   ├── Tree.cpp
 │   │   ├── Tree.hpp
 │   │   ├── Writer.cpp
 │   │   └── Writer.hpp
+│   ├── interpreter
+│   │   ├── ICParser.cpp
+│   │   ├── ICParser.hpp
+│   │   ├── Interpreter.cpp
+│   │   └── Interpreter.hpp
 │   ├── lexer
 │   │   ├── Lexer.cpp
 │   │   ├── Lexer.hpp
@@ -110,9 +122,9 @@ This project is part of the IF2224 - Formal Language and Automata Theory course 
 │   │   └── Parser.hpp
 │   └── main.cpp
 └── test
-   ├── lexer
-   ├── parser
-   └── semantic
+    ├── lexer
+    ├── parser
+    └── semantic
 ```
 ---
 
@@ -179,6 +191,8 @@ make run
 - `1` Lexical Analyzer
 - `2` Syntax Analyzer
 - `3` Semantic Analyzer
+- `4` Intermediate Code Generator
+- `5` Interpreter (Run Program)
 
 5. Choose testcase number based on the selected mode folder.
 
