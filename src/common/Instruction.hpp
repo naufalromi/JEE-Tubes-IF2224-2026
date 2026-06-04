@@ -34,6 +34,7 @@ enum class OperatorCode {
 };
 
 struct Instruction {
+    int line;
     OpCode op;
     int level;
     int operand;
@@ -42,14 +43,32 @@ struct Instruction {
     RuntimeValue literal;
 
     Instruction(OpCode op, int level, int operand)
-        : op(op),
+        : line(-1),
+          op(op),
           level(level),
           operand(operand),
           hasLiteral(false),
           literal(0) {}
 
     Instruction(OpCode op, int level, RuntimeValue literal)
-        : op(op),
+        : line(-1),
+          op(op),
+          level(level),
+          operand(0),
+          hasLiteral(true),
+          literal(literal) {}
+
+    Instruction(int line, OpCode op, int level, int operand)
+        : line(line),
+          op(op),
+          level(level),
+          operand(operand),
+          hasLiteral(false),
+          literal(0) {}
+
+    Instruction(int line, OpCode op, int level, RuntimeValue literal)
+        : line(line),
+          op(op),
           level(level),
           operand(0),
           hasLiteral(true),

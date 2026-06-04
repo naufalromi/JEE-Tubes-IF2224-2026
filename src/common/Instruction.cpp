@@ -22,7 +22,13 @@ std::string instructionToString(int index, const Instruction& instr)
 {
     std::ostringstream oss;
 
-    oss << index << " " << opCodeToString(instr.op) << " " << instr.level << " ";
+    oss << index << " " << opCodeToString(instr.op);
+
+    if (instr.op == OpCode::RET) {
+        return oss.str();
+    }
+
+    oss << " " << instr.level << " ";
 
     if (instr.op == OpCode::LIT && instr.hasLiteral) {
         oss << runtimeValueToString(instr.literal);
