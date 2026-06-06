@@ -6,6 +6,8 @@
 #include <vector>
 #include <unordered_map>
 
+class ExpressionNode;
+
 class CodeGenerator : public ASTVisitor {
 private:
     std::vector<Instruction> instructions;
@@ -23,6 +25,9 @@ public:
 private:
     void emit(OpCode op, int level, int operand);
     void emitLiteral(int level, RuntimeValue value);
+    void emitAddress(ExpressionNode* node);
+    void emitValue(ExpressionNode* node);
+    bool isCompositeType(DataType type) const;
     int getNextAddress() const;
     int currentLevel = 0;
     void backpatch(int instructionIndex, int targetAddress);

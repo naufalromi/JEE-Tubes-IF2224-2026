@@ -36,6 +36,94 @@ void CodeGenerator::emitLiteral(int level, RuntimeValue value)
     instructions.push_back(Instruction(OpCode::LIT, level, value));
 }
 
+bool CodeGenerator::isCompositeType(DataType type) const
+{
+    return type == DataType::ARRAY || type == DataType::RECORD;
+}
+
+void CodeGenerator::emitAddress(ExpressionNode *node)
+{
+    if (!node) return;
+
+    if (auto varNode = dynamic_cast<VarAccessNode *>(node)) {
+        int index = varNode->tabIndex;
+        int diffLevel = currentLevel - symbolTable->tab[index].lev;
+
+        if (symbolTable->tab[index].nrm == 0) {
+            emit(OpCode::LOD, diffLevel, symbolTable->tab[index].adr);
+        } else {
+            emit(OpCode::LDA, diffLevel, symbolTable->tab[index].adr);
+        }
+        return;
+    }
+
+    if (auto arrayNode = dynamic_cast<ArrayAccessNode *>(node)) {
+        emitAddress(arrayNode->target.get());
+
+        int atabIndex = arrayNode->target->evaluatedRef;
+        int low = symbolTable->atab[atabIndex].low;
+        int elsz = symbolTable->atab[atabIndex].elsz;
+
+        emitValue(arrayNode->index.get());
+
+        if (low != 0) {
+            emitLiteral(0, low);
+            emit(OpCode::OPR, 0, 3);
+        }
+
+        emitLiteral(0, elsz);
+        emit(OpCode::OPR, 0, 4);
+        emit(OpCode::OPR, 0, 2);
+        return;
+    }
+
+    if (auto fieldNode = dynamic_cast<FieldAccessNode *>(node)) {
+        emitAddress(fieldNode->target.get());
+        emitLiteral(0, symbolTable->tab[fieldNode->tabIndex].adr);
+        emit(OpCode::OPR, 0, 2);
+        return;
+    }
+
+    node->accept(this);
+}
+
+void CodeGenerator::emitValue(ExpressionNode *node)
+{
+    if (!node) return;
+
+    if (auto varNode = dynamic_cast<VarAccessNode *>(node)) {
+        int index = varNode->tabIndex;
+        if (symbolTable->tab[index].obj == ObjectType::CONSTANT) {
+            emitLiteral(0, symbolTable->tab[index].adr);
+            return;
+        }
+
+        emitAddress(node);
+        if (!isCompositeType(varNode->evaluatedType)) {
+            emit(OpCode::LDI, 0, 0);
+        }
+        return;
+    }
+
+    if (auto arrayNode = dynamic_cast<ArrayAccessNode *>(node)) {
+        emitAddress(node);
+        if (!isCompositeType(arrayNode->evaluatedType)) {
+            emit(OpCode::LDI, 0, 0);
+        }
+        return;
+    }
+
+    if (auto fieldNode = dynamic_cast<FieldAccessNode *>(node)) {
+        emitAddress(node);
+        if (!isCompositeType(fieldNode->evaluatedType)) {
+            emit(OpCode::LDI, 0, 0);
+        }
+        return;
+    }
+
+    node->accept(this);
+}
+
 int CodeGenerator::getNextAddress() const
 {
     return instructions.size();
@@ -165,132 +253,38 @@ void CodeGenerator::visit(CharLiteralNode *node) { emitLiteral(0, node->value); 
 void CodeGenerator::visit(VarAccessNode *node)
 {
     if (!node) return;
-    int index = node->tabIndex;
-    
-    if (symbolTable->tab[index].obj == ObjectType::CONSTANT) {
-        emitLiteral(0, symbolTable->tab[index].adr);
-    }
-    else {
-        int diffLevel = currentLevel - symbolTable->tab[index].lev;
-
-        // Jika objek ini adalah Array atau Parameter VAR, kita letakkan landasan alamatnya ke stack
-        if (symbolTable->tab[index].type == DataType::ARRAY || symbolTable->tab[index].nrm == 0) {
-            if (symbolTable->tab[index].nrm == 0) {
-                // Parameter VAR: ambil nilai alamat yang ditunjuknya
-                emit(OpCode::LOD, diffLevel, symbolTable->tab[index].adr);
-            } else {
-                // Array Biasa: ambil alamat fisik laci dasarnya
-                emit(OpCode::LDA, diffLevel, symbolTable->tab[index].adr);
-            }
-        } 
-        else {
-            // Variabel tunggal biasa (bukan array / bkn parameter var): ambil nilainya
-            emit(OpCode::LOD, diffLevel, symbolTable->tab[index].adr);
-        }
-    }
+    emitValue(node);
 }
 
 void CodeGenerator::visit(ArrayAccessNode *node)
 {
     if (!node) return;
-
-    // Biarkan target (bisa VarAccess atau ArrayAccess bagian dalam) meletakkan alamat dasarnya ke stack
-    node->target->accept(this);
-
-    // Ambil informasi ATAB untuk dimensi saat ini dari target yang sedang diindeks.
-    int atabIndex = node->target->evaluatedRef;
-    int low = symbolTable->atab[atabIndex].low;
-    int elsz = symbolTable->atab[atabIndex].elsz;
-
-    // Evaluasi Ekspresi Index (misal: isi variabel y atau x)
-    node->index->accept(this);
-
-    // Hitung Offset: (Index - Low) * ElSz
-    if (low != 0) {
-        emitLiteral(0, low);
-        emit(OpCode::OPR, 0, 3); // SUB
-    }
-
-    emitLiteral(0, elsz);
-    emit(OpCode::OPR, 0, 4); // MUL
-
-    // Tambahkan offset ke alamat pangkal yang sudah stand-by di stack
-    emit(OpCode::OPR, 0, 2); // ADD
+    emitValue(node);
 }
 
 void CodeGenerator::visit(FieldAccessNode *node)
 {
-    if (auto varTarget = std::dynamic_pointer_cast<VarAccessNode>(node->target)) {
-        emit(OpCode::LDA, 0, symbolTable->tab[varTarget->tabIndex].adr);
-        
-        int fieldOffset = symbolTable->tab[node->tabIndex].adr;
-        emitLiteral(0, fieldOffset); 
-        
-        emit(OpCode::OPR, 0, 2);
-        emit(OpCode::LDI, 0, 0);
-    }
+    if (!node) return;
+    emitValue(node);
 }
 
 void CodeGenerator::visit(AssignmentStatementNode *node)
 {
     if (!node) return;
 
-    // Kasus target adalah Array (Multi-Dimensi)
-    if (auto arrTarget = std::dynamic_pointer_cast<ArrayAccessNode>(node->target)) {
-        arrTarget->accept(this); // Evaluasi alamat target
-        if (node->value) node->value->accept(this); // Push nilai
-        if (std::dynamic_pointer_cast<ArrayAccessNode>(node->value)) {
-            emit(OpCode::LDI, 0, 0);
-        }
-        emit(OpCode::STA, 0, 0);
-    }
-    // Kasus target adalah Record Field
-    else if (auto fieldTarget = std::dynamic_pointer_cast<FieldAccessNode>(node->target)) {
-        if (auto varTarget = std::dynamic_pointer_cast<VarAccessNode>(fieldTarget->target)) {
-            emit(OpCode::LDA, 0, symbolTable->tab[varTarget->tabIndex].adr); // Base address
-            int fieldOffset = symbolTable->tab[fieldTarget->tabIndex].adr;
-            emitLiteral(0, fieldOffset); // Field offset
-            emit(OpCode::OPR, 0, 2); // Add to get exact address
-            
-            if (node->value) node->value->accept(this); // Push value
-            
-            // Use STA instead of STI to consume the exact address and value off the stack
-            emit(OpCode::STA, 0, 0); 
-        }
-    }
-    // Kasus target adalah Variabel Tunggal biasa
-    else if (auto varTarget = std::dynamic_pointer_cast<VarAccessNode>(node->target)) {
-        int tabIdx = varTarget->tabIndex;
-        int diffLevel = currentLevel - symbolTable->tab[tabIdx].lev;
-
-        if (symbolTable->tab[tabIdx].nrm == 0) {
-            // Parameter VAR tunggal: address is already stored in the variable slot
-            emit(OpCode::LOD, diffLevel, symbolTable->tab[tabIdx].adr); // Load destination address
-            if (node->value) node->value->accept(this); // Push nilai
-            emit(OpCode::STI, 0, 0); // Store indirect
-        }
-        else {
-            // Variabel biasa: evaluasi nilai lalu Store biasa
-            if (node->value) node->value->accept(this); // Push nilai
-            emit(OpCode::STO, diffLevel, symbolTable->tab[tabIdx].adr);
-        }
-    }
+    emitAddress(node->target.get());
+    emitValue(node->value.get());
+    emit(OpCode::STA, 0, 0);
 }
 
 void CodeGenerator::visit(BinaryOpNode *node)
 {
     if (!node) return;
     if (node->left) {
-        node->left->accept(this);
-        if (std::dynamic_pointer_cast<ArrayAccessNode>(node->left)) {
-            emit(OpCode::LDI, 0, 0);
-        }
+        emitValue(node->left.get());
     }
     if (node->right) {
-        node->right->accept(this);
-        if (std::dynamic_pointer_cast<ArrayAccessNode>(node->right)) {
-            emit(OpCode::LDI, 0, 0);
-        }
+        emitValue(node->right.get());
     };
 
     std::string op = node->op;
@@ -317,7 +311,7 @@ void CodeGenerator::visit(BinaryOpNode *node)
 void CodeGenerator::visit(UnaryOpNode *node)
 {
     if (!node) return;
-    if (node->operand) node->operand->accept(this);
+    if (node->operand) emitValue(node->operand.get());
 
     std::string op = node->op;
     std::transform(op.begin(), op.end(), op.begin(), ::tolower);
@@ -332,7 +326,7 @@ void CodeGenerator::visit(UnaryOpNode *node)
 void CodeGenerator::visit(IfStatementNode *node)
 {
     if (!node) return;
-    if (node->condition) node->condition->accept(this);
+    if (node->condition) emitValue(node->condition.get());
 
     int jpcIndex = getNextAddress();
     emit(OpCode::JPC, 0, 0);
@@ -357,7 +351,7 @@ void CodeGenerator::visit(WhileLoopNode *node)
     if (!node) return;
     int loopStartIndex = getNextAddress();
 
-    if (node->condition) node->condition->accept(this);
+    if (node->condition) emitValue(node->condition.get());
 
     int jpcIndex = getNextAddress();
     emit(OpCode::JPC, 0, 0);
@@ -378,7 +372,7 @@ void CodeGenerator::visit(RepeatUntilNode *node)
         if (stmt) stmt->accept(this);
     }
 
-    if (node->condition) node->condition->accept(this);
+    if (node->condition) emitValue(node->condition.get());
 
     emit(OpCode::JPC, 0, loopStartIndex);
 }
@@ -396,13 +390,13 @@ void CodeGenerator::visit(ForLoopNode *node)
     int counterAdr = symbolTable->tab[index].adr;
     int diffLevel = currentLevel - symbolTable->tab[index].lev;
 
-    if (node->startValue) node->startValue->accept(this);
+    if (node->startValue) emitValue(node->startValue.get());
     emit(OpCode::STO, diffLevel, counterAdr);
 
     int loopStart = getNextAddress();
 
     emit(OpCode::LOD, diffLevel, counterAdr);
-    if (node->endValue) node->endValue->accept(this);
+    if (node->endValue) emitValue(node->endValue.get());
     emit(OpCode::OPR, 0, node->isDownTo ? 10 : 12);
 
     int exitJmp = getNextAddress();
@@ -428,8 +422,8 @@ void CodeGenerator::visit(CaseStatementNode *node)
     for (auto &caseItem : node->cases) {
         int nextCaseJmp = 0;
         for (auto &caseConst : caseItem.first) {
-            if (node->expression) node->expression->accept(this);
-            if (caseConst) caseConst->accept(this);
+            if (node->expression) emitValue(node->expression.get());
+            if (caseConst) emitValue(caseConst.get());
 
             emit(OpCode::OPR, 0, 7);
             nextCaseJmp = getNextAddress();
@@ -462,11 +456,7 @@ void CodeGenerator::visit(ProcedureCallNode *node)
     if (funcName == "writeln" || funcName == "write") {
         int oprCode = (funcName == "writeln") ? 14 : 13;
         for (auto &arg : node->args) {
-            arg->accept(this);
-            if (std::dynamic_pointer_cast<ArrayAccessNode>(arg)) {
-                emit(OpCode::LDI, 0, 0);
-            }
-            
+            emitValue(arg.get());
             emit(OpCode::OPR, 0, oprCode);
         }
     }
@@ -487,7 +477,7 @@ void CodeGenerator::visit(ProcedureCallNode *node)
     }
     else {
         for (auto &arg : node->args)
-            arg->accept(this);
+            emitValue(arg.get());
 
         int callIdx = getNextAddress();
         emit(OpCode::CAL, currentLevel - symbolTable->tab[node->tabIndex].lev, 0);
@@ -500,7 +490,7 @@ void CodeGenerator::visit(FunctionCallNode *node)
 {
     if (!node) return;
     for (auto &arg : node->args)
-        arg->accept(this);
+        emitValue(arg.get());
 
     int callIdx = getNextAddress();
     emit(OpCode::CAL, currentLevel - symbolTable->tab[node->tabIndex].lev, 0);
