@@ -249,8 +249,10 @@ void CodeGenerator::visit(AssignmentStatementNode *node)
             emitLiteral(0, fieldOffset); // Field offset
             emit(OpCode::OPR, 0, 2); // Add to get exact address
             
-            if (node->value) node->value->accept(this); // Push nilai
-            emit(OpCode::STI, 0, 0);
+            if (node->value) node->value->accept(this); // Push value
+            
+            // Use STA instead of STI to consume the exact address and value off the stack
+            emit(OpCode::STA, 0, 0); 
         }
     }
     // Kasus target adalah Variabel Tunggal biasa

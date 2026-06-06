@@ -221,21 +221,12 @@ void Interpreter::execute(const Instruction& instr, std::ostream& out)
             }
             }
             break;
-        case OpCode::STA: { // STORE ARRAY
-            // Ambil alamat memori absolut dari elemen array tujuan (berada di paling atas stack)
-            int targetAddress = toInt(stack[sp], instr.line);
+        case OpCode::STA: { 
+            RuntimeValue valueToStore = pop(line);
+            int targetAddress = toInt(pop(line), line);
             
-            // Validasi untuk memastikan alamat tidak keluar dari batas memori stack frame
-            ensureStackIndex(targetAddress, instr.line);
-            
-            // Ambil nilai/data asli yang mau disimpan (berada di posisi sub-top stack)
-            RuntimeValue valueToStore = stack[sp - 1];
-            
-            // Tulis nilai tersebut langsung ke laci alamat yang dituju
+            ensureStackIndex(targetAddress, line);
             stack[targetAddress] = valueToStore;
-            
-            // Bersihkan stack: buang alamat dan data yang sudah dikonsumsi (pop 2 elemen)
-            sp -= 2; 
             break;
         }
     }
