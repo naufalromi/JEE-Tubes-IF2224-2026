@@ -104,7 +104,8 @@ enum class NodeType {
     TypeSy,
     Unknown,
     Literal,
-    BinaryOperation
+    BinaryOperation,
+    ParameterRefGroup
 };
 
 // Utility to convert enum to string for printing

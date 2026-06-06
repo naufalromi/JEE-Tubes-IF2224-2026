@@ -17,6 +17,7 @@ std::string opCodeToString(OpCode op)
         case OpCode::LDA: return "LDA";
         case OpCode::LDI: return "LDI";
         case OpCode::STI: return "STI";
+        case OpCode::STA: return "STA";
         default: return "UNKNOWN";
     }
 }

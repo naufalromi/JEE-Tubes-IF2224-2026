@@ -105,6 +105,8 @@ void SemanticVisitor::visit(VarDeclarationNode *node)
         node->scopeLevel = currentLevel;
         symbolTable.tab[index].ref = node->typeDefinition->resolvedRef;
         node->tabIndex = index; 
+        
+        symbolTable.tab[index].nrm = node->isReference ? 0 : 1;
     } else {
         reportError(node, "Duplicate identifier: " + node->name);
     }
@@ -175,8 +177,6 @@ void SemanticVisitor::visit(ProcedureDeclarationNode *node)
         node->tabIndex = procIndex;
     }
 
-    node->scopeLevel = currentLevel;
-
     // Siapkan Block baru untuk Prosedur
     BtabEntry procBlock;
     procBlock.last = procIndex;
@@ -194,9 +194,9 @@ void SemanticVisitor::visit(ProcedureDeclarationNode *node)
     symbolTable.currentBlock = symbolTable.btab.size() - 1;
     currentVisibilityBlock = symbolTable.currentBlock;
 
-    int initialLastIndex = procBlock.last;
+    int initialLastIndex = procIndex; // Gunakan procIndex langsung sebagai batas aman
 
-    // Visit Parameter
+    // VISIT PARAMETER (Cukup SATU kali saja, duplikatnya sudah dihapus)
     for (auto &param : node->parameters) { 
         param->accept(this); 
     }
@@ -206,7 +206,7 @@ void SemanticVisitor::visit(ProcedureDeclarationNode *node)
     int currParam = paramLastIndex;
     
     std::vector<int> paramVars;
-    while (currParam > initialLastIndex) {
+    while (currParam > 0 && currParam != initialLastIndex) { 
         if (symbolTable.tab[currParam].obj == ObjectType::VARIABLE) {
             paramVars.push_back(currParam);
         }
@@ -219,13 +219,22 @@ void SemanticVisitor::visit(ProcedureDeclarationNode *node)
 
     for (int pIndex : paramVars) {
         int size = 0;
-        if (symbolTable.tab[pIndex].type == DataType::ARRAY) {
-            size = symbolTable.atab[symbolTable.tab[pIndex].ref].size;
-        } else if (symbolTable.tab[pIndex].type == DataType::RECORD) {
-            size = symbolTable.btab[symbolTable.tab[pIndex].ref].vsze;
-        } else {
-            size = getDataTypeSize(symbolTable.tab[pIndex].type);
+
+        // Alokasi Pointer
+        if (symbolTable.tab[pIndex].nrm == 0) {
+            size = 4; 
+        } 
+        else {
+            // Jika nrm == 1 (Pass by Value biasa), hitung ukuran riilnya
+            if (symbolTable.tab[pIndex].type == DataType::ARRAY) {
+                size = symbolTable.atab[symbolTable.tab[pIndex].ref].size;
+            } else if (symbolTable.tab[pIndex].type == DataType::RECORD) {
+                size = symbolTable.btab[symbolTable.tab[pIndex].ref].vsze;
+            } else {
+                size = getDataTypeSize(symbolTable.tab[pIndex].type);
+            }
         }
+        
         symbolTable.tab[pIndex].adr = currentOffset;
         currentOffset += size;
         totalParamMemory += size;
@@ -244,7 +253,7 @@ void SemanticVisitor::visit(ProcedureDeclarationNode *node)
     int currLocal = finalLastIndex;
 
     std::vector<int> localVars;
-    while (currLocal > paramLastIndex) {
+    while (currLocal > 0 && currLocal != paramLastIndex) { 
         if (symbolTable.tab[currLocal].obj == ObjectType::VARIABLE) {
             localVars.push_back(currLocal);
         }
@@ -257,7 +266,7 @@ void SemanticVisitor::visit(ProcedureDeclarationNode *node)
     for (int lIndex : localVars) {
         int size = 0;
         if (symbolTable.tab[lIndex].type == DataType::ARRAY) {
-            size = symbolTable.atab[symbolTable.tab[lIndex].ref].size;
+            size = symbolTable.atab[symbolTable.tab[lIndex].ref].size; 
         } else if (symbolTable.tab[lIndex].type == DataType::RECORD) {
             size = symbolTable.btab[symbolTable.tab[lIndex].ref].vsze;
         } else {
@@ -1109,9 +1118,15 @@ void SemanticVisitor::visit(ProcedureCallNode *node)
 
     int blockIdx = symbolTable.tab[index].ref;
     std::vector<int> expectedParams;
-    int currParam = symbolTable.btab[blockIdx].lpar;
-    while (currParam > index + 1) {
-        expectedParams.push_back(currParam);
+    int currParam = symbolTable.btab[blockIdx].last;
+    while (currParam > index) {
+        // FILTER: Kita hanya ingin mengambil variabel yang bertindak sebagai PARAMETER.
+        // periksa apakah index-nya berada dalam rentang parameter formal.
+        // Karena parameter didaftarkan duluan, indeksnya pasti <= lpar (Last Parameter)
+        if (symbolTable.tab[currParam].obj == ObjectType::VARIABLE && 
+            currParam <= symbolTable.btab[blockIdx].lpar) {
+            expectedParams.push_back(currParam);
+        }
         currParam = symbolTable.tab[currParam].link;
     }
     std::reverse(expectedParams.begin(), expectedParams.end());
@@ -1125,6 +1140,30 @@ void SemanticVisitor::visit(ProcedureCallNode *node)
             if (node->args[k]) {
                 node->args[k]->accept(this);
                 int pIdx = expectedParams[k];
+
+                // Validasi Arugemen Parameter Var
+                // Jika targetnya adalah parameter VAR
+                if (symbolTable.tab[pIdx].nrm == 0) { 
+                    auto varAccess = std::dynamic_pointer_cast<VarAccessNode>(node->args[k]);
+                    
+                    // Cek 1: Harus berupa variabel access (bukan literal seperti IntLiteral/CharLiteral atau ArrayAccess mentah jika tidak valid)
+                    // Catatan: ArrayAccess / FieldAccess juga boleh dioper ke VAR jika menghasilkan L-Value
+                    if (!varAccess) {
+                        reportError(node->args[k].get(), "Semantic Error: Variable parameter '" + symbolTable.tab[pIdx].name + 
+                                                         "' requires a variable reference as an argument.");
+                        continue;
+                    }
+                    
+                    // Cek 2: Tidak boleh mengoper CONSTANT ke parameter VAR (karena nilainya bisa dimanipulasi di dalam prosedur)
+                    int argTabIdx = varAccess->tabIndex;
+                    if (symbolTable.tab[argTabIdx].obj == ObjectType::CONSTANT) {
+                        reportError(node->args[k].get(), "Semantic Error: Cannot pass constant '" + varAccess->name + 
+                                                         "' as a VAR parameter.");
+                        continue;
+                    }
+                }
+
+
                 DataType paramType = symbolTable.tab[pIdx].type;
                 int paramRef = symbolTable.tab[pIdx].ref;
                 if (!isCompatible(paramType, paramRef, node->args[k]->evaluatedType, node->args[k]->evaluatedRef)) {
@@ -1218,19 +1257,19 @@ int SemanticVisitor::getDataTypeSize(DataType type)
 {
     switch (type) {
         case DataType::INTEGER:
-            return 4;
+            return 1;
         case DataType::REAL:
-            return 8;
+            return 1;
         case DataType::BOOLEAN:
             return 1;
         case DataType::CHAR:
             return 1;
         case DataType::STRING:
-            return 256; // Assuming max 256 chars
+            return 1;
         case DataType::SUBRANGE:
-            return 4;  // SUBRANGE typically uses INTEGER as base (4 bytes)
+            return 1;
         case DataType::ENUMERATED:
-            return 4;  // ENUMERATED typically uses INTEGER (4 bytes)
+            return 1;
         case DataType::RECORD:
             return 256;  // Estimated record size
         case DataType::ARRAY:

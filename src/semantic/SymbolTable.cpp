@@ -4,7 +4,7 @@
 
 void SymbolTable::initPredefined()
 {
-    currentBlock = 0; 
+    currentBlock = 0;
     tabTop = 0;
     // index 0 : nullpointer untuk 'NULL';
     tab[0] = {"NULL", 0, ObjectType::TYPE, DataType::UNKNOWN, 0, 0, 0, 0};
@@ -36,7 +36,7 @@ void SymbolTable::initPredefined()
     // Set btab[0].last to point to the last reserved word FIRST
     tabTop = i - 1;
     btab[0].last = tabTop;
-    
+
     // Now add predefined I/O procedures at level 0 (global)
     // enter() will use btab[0].last + 1 to find the next index
     enter("writeln", ObjectType::PROCEDURE, DataType::VOID, 0);
@@ -50,12 +50,24 @@ void SymbolTable::initPredefined()
 
 int SymbolTable::lookup(std::string name, int lastIndex) const
 {
+    // Cari dulu menggunakan jalur rantai link yang diberikan (bisa lokal / sesuai konteks)
     int i = lastIndex;
     while (i > 0) {
         if (tab[i].name == name) return i;
         i = tab[i].link;
     }
-    return 0;
+
+    // Jika tidak ketemu di rantai tersebut, DAN kita sedang berada di scope lokal,
+    // baru kita lakukan fallback otomatis untuk mencari di scope Global (btab[0])
+    if (currentBlock > 0) {
+        i = btab[0].last;
+        while (i > 0) {
+            if (tab[i].name == name) return i;
+            i = tab[i].link;
+        }
+    }
+    
+    return 0; // Benar-benar tidak ditemukan di mana pun
 }
 
 int SymbolTable::enter(std::string name, ObjectType kind, DataType type, int lev)

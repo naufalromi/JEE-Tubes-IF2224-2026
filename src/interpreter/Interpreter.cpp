@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <type_traits>
 #include <iostream>
+#include <vector>
 namespace {
 int lineOf(const Instruction& instr)
 {
@@ -123,15 +124,59 @@ void Interpreter::execute(const Instruction& instr, std::ostream& out)
             break;
         }
 
-        case OpCode::CAL:
+        case OpCode::LDA: {
+            int address = base(instr.level) + instr.operand;
+            ensureStackIndex(address, line);
+            push(address, line);
+            break;
+        }
+
+        case OpCode::LDI: {
+            int address = toInt(pop(line), line);
+            ensureStackIndex(address, line);
+            push(stack[address], line);
+            break;
+        }
+
+        case OpCode::STI: {
+            RuntimeValue value = pop(line);
+            int pointerAddress = base(instr.level) + instr.operand;
+            ensureStackIndex(pointerAddress, line);
+            int targetAddress = toInt(stack[pointerAddress], line);
+            ensureStackIndex(targetAddress, line);
+            stack[targetAddress] = value;
+            break;
+        }
+
+        case OpCode::CAL: {
             validateJumpTarget(instr.operand, line);
-            ensureStackIndex(sp + 3, line);
-            stack[sp + 1] = base(instr.level);
-            stack[sp + 2] = bp;
-            stack[sp + 3] = pc;
-            bp = sp + 1;
+            int argCount = instr.argCount;
+            if (argCount < 0) {
+                throw std::runtime_error(runtimeErrorPrefix(line) + "Invalid argument count");
+            }
+            requireStackItems(argCount, line);
+
+            std::vector<RuntimeValue> args;
+            args.reserve(argCount);
+            int firstArg = sp - argCount + 1;
+            for (int i = 0; i < argCount; i++) {
+                args.push_back(stack[firstArg + i]);
+            }
+
+            int newBase = sp - argCount + 1;
+            ensureStackIndex(newBase + 2 + argCount, line);
+            stack[newBase] = base(instr.level);
+            stack[newBase + 1] = bp;
+            stack[newBase + 2] = pc;
+            for (int i = 0; i < argCount; i++) {
+                stack[newBase + 3 + i] = args[i];
+            }
+
+            bp = newBase;
+            sp = bp - 1;
             pc = instr.operand;
             break;
+        }
 
         case OpCode::JMP:
             validateJumpTarget(instr.operand, line);
@@ -160,6 +205,23 @@ void Interpreter::execute(const Instruction& instr, std::ostream& out)
                 halted = true;
             }
             break;
+        case OpCode::STA: { // STORE ARRAY
+            // Ambil alamat memori absolut dari elemen array tujuan (berada di paling atas stack)
+            int targetAddress = toInt(stack[sp], instr.line);
+            
+            // Validasi untuk memastikan alamat tidak keluar dari batas memori stack frame
+            ensureStackIndex(targetAddress, instr.line);
+            
+            // Ambil nilai/data asli yang mau disimpan (berada di posisi sub-top stack)
+            RuntimeValue valueToStore = stack[sp - 1];
+            
+            // Tulis nilai tersebut langsung ke laci alamat yang dituju
+            stack[targetAddress] = valueToStore;
+            
+            // Bersihkan stack: buang alamat dan data yang sudah dikonsumsi (pop 2 elemen)
+            sp -= 2; 
+            break;
+        }
     }
 }
 

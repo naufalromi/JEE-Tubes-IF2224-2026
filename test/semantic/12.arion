@@ -1,0 +1,98 @@
+program GameOfLife;
+
+const
+    ROWS == 16;
+    COLS == 32;
+
+type 
+    { membuat element matrix }
+    arrmatrix == array [0..COLS] of Integer;
+
+type 
+    { membuat matrix}
+    Tmatrix == array [0..ROWS] of arrmatrix;
+
+var 
+    front: Tmatrix;
+    back: Tmatrix;
+
+procedure display(var matrix : Tmatrix);
+    var 
+        y, x : Integer;
+
+    begin
+        for y := 0 to ROWS do
+            begin
+                for x := 0 to COLS do
+                begin
+                    if (matrix[y][x] == 1) then
+                        write('#')
+                    else 
+                        write('.');
+                end;
+                writeln('');
+            end;
+    end;
+
+procedure next(var back,front : Tmatrix);
+    var 
+        nbors : Integer;
+    
+    begin
+        for y := 0 to ROWS do
+            begin
+                for x := 0 to COLS do
+                begin
+                    nbors := countnbor(x,y, front); 
+                    if (front[y][x] == 1) then
+                        back[y][x] := (nbors == 2) OR (nbors == 3)
+                    else
+                        back[y][x] := (nbors == 3);
+                end;
+            end;
+    end;
+
+
+function modn(a,b : Integer) : Integer
+    begin
+        modn := (a MOD b + b) MOD b;
+    end;
+
+function countnbor(cx : Integer, cy : Integer, var matrix : Tmatrix) : Integer
+    var 
+        nbors,dx,dy,x,y : Integer;
+    begin
+        nbors := 0;
+        for dx := -1 to 1 do
+            begin
+                for dy := -1 to 1 do
+                begin
+                    if (not (dx == 0 and dy == 0)) then
+                        x := modn(cx + dx, COLS);
+                        y := modn(cy + dy, ROWS);
+                        if (matrix[y][x]) then
+                            nbors := nbors + 1;
+                end;
+            end;
+        countnbor := nbors;
+    end.
+        
+
+
+begin
+
+    {   012 }
+    { 0 .*. }
+    { 1 ..* }
+    { 2 *** }
+
+    front[0][1] := 1;
+    front[1][2] := 1;
+    front[2][0] := 1;
+    front[2][1] := 1;
+    front[2][2] := 1;
+    
+    display(front);
+    next(front, back);
+
+end.

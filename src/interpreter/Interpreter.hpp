@@ -8,7 +8,7 @@
 
 class Interpreter {
 public:
-    static constexpr int STACK_MAX = 2048;
+    static constexpr int STACK_MAX = 1000000;
 
     Interpreter();
     explicit Interpreter(std::vector<Instruction> instructions);

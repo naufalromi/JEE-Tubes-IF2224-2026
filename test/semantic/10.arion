@@ -17,6 +17,6 @@ begin
   begin
     y := y - 1;
     if y > 0 then
-      writeln(y);
+      writeln('Hallo kawan');
   end;
 end.

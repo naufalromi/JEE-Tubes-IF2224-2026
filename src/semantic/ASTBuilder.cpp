@@ -215,8 +215,10 @@ std::vector<std::shared_ptr<VarDeclarationNode>> ASTBuilder::buildFormalParamete
     if (!node) return allParameters;
 
     for (const auto& child : node->children) {
-        if (child->type == NodeType::ParameterGroup) {
+        if (child->type == NodeType::ParameterGroup || child->type == NodeType::ParameterRefGroup){
             
+            bool isRef = (child->type == NodeType::ParameterRefGroup);
+
             std::vector<std::string> paramNames;
             std::shared_ptr<TypeNode> paramType = nullptr;
 
@@ -237,7 +239,7 @@ std::vector<std::shared_ptr<VarDeclarationNode>> ASTBuilder::buildFormalParamete
 
             if (paramType) {
                 for (const auto& name : paramNames) {
-                    allParameters.push_back(setSourceLocation(std::make_shared<VarDeclarationNode>(name, paramType), child));
+                    allParameters.push_back(setSourceLocation(std::make_shared<VarDeclarationNode>(name, paramType, isRef), child));
                 }
             }
         }

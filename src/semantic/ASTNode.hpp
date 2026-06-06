@@ -121,9 +121,10 @@ class VarDeclarationNode : public DeclarationNode {
 public:
     std::string name;
     std::shared_ptr<TypeNode> typeDefinition;
+    bool isReference;
 
-    VarDeclarationNode(const std::string& n, std::shared_ptr<TypeNode> typeDef)
-        : DeclarationNode(ASTNodeType::VarDecl), name(n), typeDefinition(typeDef) {}
+    VarDeclarationNode(const std::string& n, std::shared_ptr<TypeNode> typeDef, bool isRef = false)
+        : DeclarationNode(ASTNodeType::VarDecl), name(n), typeDefinition(typeDef), isReference{isRef} {}
 
     void accept(ASTVisitor* visitor) override { visitor->visit(this); }
 };

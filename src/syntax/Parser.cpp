@@ -714,11 +714,21 @@ std::shared_ptr<TreeNode> Parser::parseFormalParameterList()
     return node;
 }
 
-// 21 PARAMETER-GROUP -> IDENTIFIER-LIST + colon + (ident | ARRAY-TYPE)
+// 21 PARAMETER-GROUP -> (varsy)? + IDENTIFIER-LIST + colon + (ident | ARRAY-TYPE)
 std::shared_ptr<TreeNode> Parser::parseParameterGroup()
 {
     size_t saved = save();
-    auto node = std::make_shared<TreeNode>(NodeType::ParameterGroup);
+    
+    // Default jenis node adalah Value (Pass by Value)
+    NodeType groupType = NodeType::ParameterGroup; 
+    
+    // Cek jika ada keyword VAR
+    if (peek().type == TokenType::VARSY) {
+        groupType = NodeType::ParameterRefGroup; // Pass by Reference (VAR)
+        advance(); // Konsumsi token 'var'
+    }
+
+    auto node = std::make_shared<TreeNode>(groupType);
 
     if (!need(node, parseIdentifierList())) return fail(saved);
     if (!need(node, terminal(TokenType::COLON, NodeType::Colon))) return fail(saved);
@@ -726,7 +736,6 @@ std::shared_ptr<TreeNode> Parser::parseParameterGroup()
 
     return node;
 }
-
 // 22 COMPOUND-STATEMENT -> beginsy + STATEMENT-LIST + endsy
 std::shared_ptr<TreeNode> Parser::parseCompoundStatement()
 {

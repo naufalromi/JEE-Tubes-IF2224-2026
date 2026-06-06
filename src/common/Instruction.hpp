@@ -16,7 +16,8 @@ enum class OpCode {
     RET,
     LDA,
     LDI,
-    STI 
+    STI,
+    STA
 };
 
 enum class OperatorCode {
@@ -45,6 +46,7 @@ struct Instruction {
 
     bool hasLiteral;
     RuntimeValue literal;
+    int argCount = 0;
 
     Instruction(OpCode op, int level, int operand)
         : line(-1),
