@@ -7,23 +7,22 @@ const
 type 
     { membuat element matrix }
     arrmatrix == array [0..COLS] of Integer;
-
-type 
     { membuat matrix}
     Tmatrix == array [0..ROWS] of arrmatrix;
 
 var 
     front: Tmatrix;
     back: Tmatrix;
+    k,x,y : Integer;
 
 procedure display(var matrix : Tmatrix);
     var 
         y, x : Integer;
 
     begin
-        for y := 0 to ROWS do
-            begin
-                for x := 0 to COLS do
+        for y := 0 to (ROWS - 1) do
+            begin   
+                for x := 0 to (COLS - 1) do
                 begin
                     if (matrix[y][x] == 1) then
                         write('#')
@@ -34,31 +33,14 @@ procedure display(var matrix : Tmatrix);
             end;
     end;
 
-procedure next(var back,front : Tmatrix);
-    var 
-        nbors : Integer;
-    
+
+
+function modn(a,b : Integer) : Integer;
     begin
-        for y := 0 to ROWS do
-            begin
-                for x := 0 to COLS do
-                begin
-                    nbors := countnbor(x,y, front); 
-                    if (front[y][x] == 1) then
-                        back[y][x] := (nbors == 2) OR (nbors == 3)
-                    else
-                        back[y][x] := (nbors == 3);
-                end;
-            end;
+        modn := ((a MOD b) + b) MOD b;
     end;
 
-
-function modn(a,b : Integer) : Integer
-    begin
-        modn := (a MOD b + b) MOD b;
-    end;
-
-function countnbor(cx : Integer, cy : Integer, var matrix : Tmatrix) : Integer
+function countnbor(cx, cy : Integer; var matrix : Tmatrix) : Integer;
     var 
         nbors,dx,dy,x,y : Integer;
     begin
@@ -67,19 +49,64 @@ function countnbor(cx : Integer, cy : Integer, var matrix : Tmatrix) : Integer
             begin
                 for dy := -1 to 1 do
                 begin
-                    if (not (dx == 0 and dy == 0)) then
+                    if (NOT((dx == 0 ) and (dy == 0))) then
                         x := modn(cx + dx, COLS);
                         y := modn(cy + dy, ROWS);
-                        if (matrix[y][x]) then
+                        if (matrix[y][x] == 1) then
                             nbors := nbors + 1;
                 end;
             end;
         countnbor := nbors;
-    end.
+    end;
         
+procedure next(var front,back : Tmatrix);
+    var 
+        nbors : Integer;
+        y,x : Integer;
+    
+    begin
+        for y := 0 to (ROWS - 1) do
+            begin
+                for x := 0 to (COLS - 1 )do
+                begin
+                    nbors := countnbor(x, y, front); 
+                    if (front[y][x] == 1) then
+                        if ((nbors == 2) OR (nbors == 3) ) then
+                            back[y][x] :=  1
+                        else 
+                            back[y][x] := 0
+                    else
+                        if (nbors == 3) then
+                            back[y][x] := 1
+                        else 
+                             back[y][x] := 0
+                end;
+            end;
+    end;
+
+procedure copyMatrix(var dest, src : Tmatrix);
+    var
+        y, x : Integer;
+    begin
+        for y := 0 to (ROWS - 1 )do
+            begin
+                for x := 0 to (COLS - 1) do
+                begin
+                    dest[y][x] := src[y][x];
+                end;
+            end;
+    end;
+
 
 
 begin
+    for y := 0 to ROWS - 1 do
+    begin
+        for x := 0 to COLS - 1 do
+            begin
+            front[y][x] := 0;
+            end;
+        end;
 
     {   012 }
     { 0 .*. }
@@ -91,8 +118,19 @@ begin
     front[2][0] := 1;
     front[2][1] := 1;
     front[2][2] := 1;
-    
-    display(front);
-    next(front, back);
+
+    writeln('--- Generasi Awal ---');
+    while (True) do 
+        begin
+        display(front);
+        next(front,back);
+        copyMatrix(front, back) ;
+
+        for k := 0 to 10000 do
+            begin
+            end;
+        writeln('');
+
+    end;
 
 end.
