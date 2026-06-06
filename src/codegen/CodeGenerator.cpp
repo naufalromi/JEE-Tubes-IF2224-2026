@@ -12,6 +12,7 @@ void CodeGenerator::generate(ProgramNode* root)
     instructions.clear();
     subroutineAddresses.clear();
     unresolvedCalls.clear();
+    currentLevel = 0;
 
     if (root) {
         root->accept(this);
@@ -77,7 +78,9 @@ void CodeGenerator::visit(ProcedureDeclarationNode* node) {
     int totalMem = 3 + symbolTable->btab[blockRef].psze + symbolTable->btab[blockRef].vsze;
     emit(OpCode::INT, 0, totalMem);
 
+    currentLevel++;
     if (node->body) node->body->accept(this);
+    currentLevel--;
 
     emit(OpCode::RET, 0, 0);
 
@@ -97,8 +100,10 @@ void CodeGenerator::visit(FunctionDeclarationNode* node) {
     int totalMem = 3 + symbolTable->btab[blockRef].psze + symbolTable->btab[blockRef].vsze;
     emit(OpCode::INT, 0, totalMem);
 
+    currentLevel++;
     if (node->body) node->body->accept(this);
-
+    currentLevel--;
+    
     emit(OpCode::RET, 0, 0);
     backpatch(skipJmp, getNextAddress());
 }
@@ -150,7 +155,7 @@ void CodeGenerator::visit(VarAccessNode* node) {
     if (symbolTable->tab[index].obj == ObjectType::CONSTANT) {
         emitLiteral(0, symbolTable->tab[index].adr);
     } else {
-        emit(OpCode::LOD, symbolTable->tab[index].lev, symbolTable->tab[index].adr);
+        emit(OpCode::LOD, currentLevel - symbolTable->tab[index].lev, symbolTable->tab[index].adr);
     }
 }
 
@@ -208,7 +213,7 @@ void CodeGenerator::visit(AssignmentStatementNode* node) {
     } 
     else if (auto varTarget = std::dynamic_pointer_cast<VarAccessNode>(node->target)) {
         if (node->value) node->value->accept(this);
-        emit(OpCode::STO, symbolTable->tab[varTarget->tabIndex].lev, symbolTable->tab[varTarget->tabIndex].adr);
+        emit(OpCode::STO, currentLevel - symbolTable->tab[varTarget->tabIndex].lev, symbolTable->tab[varTarget->tabIndex].adr);
     }
     else if (auto fieldTarget = std::dynamic_pointer_cast<FieldAccessNode>(node->target)) {
         if (auto varTarget = std::dynamic_pointer_cast<VarAccessNode>(fieldTarget->target)) {
@@ -324,7 +329,7 @@ void CodeGenerator::visit(ForLoopNode* node) {
     }
 
     int counterAdr = symbolTable->tab[index].adr;
-    int counterLev = symbolTable->tab[index].lev;
+    int counterLev = currentLevel - symbolTable->tab[index].lev;
 
     if (node->startValue) node->startValue->accept(this);
     emit(OpCode::STO, counterLev, counterAdr);
@@ -404,7 +409,7 @@ void CodeGenerator::visit(ProcedureCallNode* node) {
                 int lev = symbolTable->tab[index].lev;
                 int adr = symbolTable->tab[index].adr;
                 
-                emit(OpCode::STO, lev, adr);
+                emit(OpCode::STO, currentLevel - lev, adr);
             } else {
                 std::cerr << "CodeGen Error: readln argument must be a variable.\n";
             }
@@ -414,7 +419,7 @@ void CodeGenerator::visit(ProcedureCallNode* node) {
         for (auto& arg : node->args) arg->accept(this);
         
         int callIdx = getNextAddress();
-        emit(OpCode::CAL, symbolTable->tab[node->tabIndex].lev, 0);
+        emit(OpCode::CAL, currentLevel - symbolTable->tab[node->tabIndex].lev, 0);
         unresolvedCalls.push_back({callIdx, node->tabIndex});
     }
 }
@@ -424,7 +429,7 @@ void CodeGenerator::visit(FunctionCallNode* node) {
     for (auto& arg : node->args) arg->accept(this);
     
     int callIdx = getNextAddress();
-    emit(OpCode::CAL, symbolTable->tab[node->tabIndex].lev, 0);
+    emit(OpCode::CAL, currentLevel - symbolTable->tab[node->tabIndex].lev, 0);
     unresolvedCalls.push_back({callIdx, node->tabIndex});
 }
 
