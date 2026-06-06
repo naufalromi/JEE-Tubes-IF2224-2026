@@ -1,0 +1,152 @@
+@startuml
+enum "OpCode" as C_0005459879916210408165
+enum C_0005459879916210408165 {
+LIT
+LOD
+STO
+CAL
+INT
+JMP
+JPC
+OPR
+RET
+LDA
+LDI
+STI
+}
+enum "OperatorCode" as C_0017169051521237437319
+enum C_0017169051521237437319 {
+NEG
+ADD
+SUB
+MUL
+DIV
+MOD
+EQL
+NEQ
+LSS
+GEQ
+GTR
+LEQ
+WRT
+WRTLN
+READLN
+}
+class "Instruction" as C_0013396770724989915034
+class C_0013396770724989915034 {
++Instruction(OpCode op, int level, int operand) : void
++Instruction(OpCode op, int level, RuntimeValue literal) : void
++Instruction(int line, OpCode op, int level, int operand) : void
++Instruction(int line, OpCode op, int level, RuntimeValue literal) : void
+__
++hasLiteral : bool
++level : int
++line : int
++literal : RuntimeValue
++op : OpCode
++operand : int
+}
+class "CodeGenerator" as C_0007620943392146260876
+class C_0007620943392146260876 {
++CodeGenerator(const SymbolTable * symTab) : void
++~CodeGenerator() = default : void
+..
+-backpatch(int instructionIndex, int targetAddress) : void
+-emit(OpCode op, int level, int operand) : void
+-emitLiteral(int level, RuntimeValue value) : void
++exportToFile(const std::string & filename) const : bool
++generate(ProgramNode * root) : void
++getInstructions() const : const std::vector<Instruction> &
+-getNextAddress() const : int
+-resolveFunctionCalls() : void
++visit(CharLiteralNode * node) : void
++visit(EmptyStatementNode * node) : void
++visit(VarAccessNode * node) : void
++visit(ArrayAccessNode * node) : void
++visit(FieldAccessNode * node) : void
++visit(BinaryOpNode * node) : void
++visit(UnaryOpNode * node) : void
++visit(FunctionCallNode * node) : void
++visit(CompoundStatementNode * node) : void
++visit(AssignmentStatementNode * node) : void
++visit(IfStatementNode * node) : void
++visit(CaseStatementNode * node) : void
++visit(WhileLoopNode * node) : void
++visit(ForLoopNode * node) : void
++visit(RepeatUntilNode * node) : void
++visit(ProcedureCallNode * node) : void
++visit(BooleanLiteralNode * node) : void
++visit(StringLiteralNode * node) : void
++visit(RealLiteralNode * node) : void
++visit(IntegerLiteralNode * node) : void
++visit(FunctionDeclarationNode * node) : void
++visit(ProcedureDeclarationNode * node) : void
++visit(TypeDeclarationNode * node) : void
++visit(VarDeclarationNode * node) : void
++visit(ConstDeclarationNode * node) : void
++visit(RangeTypeNode * node) : void
++visit(EnumeratedTypeNode * node) : void
++visit(RecordTypeNode * node) : void
++visit(ArrayTypeNode * node) : void
++visit(SimpleTypeNode * node) : void
++visit(BlockNode * node) : void
++visit(ProgramNode * node) : void
+__
+-instructions : std::vector<Instruction>
+-subroutineAddresses : std::unordered_map<int,int>
+-symbolTable : const SymbolTable *
+-unresolvedCalls : std::vector<std::pair<int,int>>
+}
+class "Interpreter" as C_0016560495222406787430
+class C_0016560495222406787430 {
++Interpreter() : void
++Interpreter(std::vector<Instruction> instructions) : void
+..
+-base(int level) const : int
+{static} -compare(const RuntimeValue & left, const RuntimeValue & right, int line) : int
+-ensureStackIndex(int index, int line) const : void
+-execute(const Instruction & instr, std::ostream & out) : void
+-executeOpr(int op, int line, std::ostream & out) : void
++getInstructions() const : const std::vector<Instruction> &
++getOutput() const : const std::string &
+{static} -isDoubleValue(const RuntimeValue & value) : bool
+{static} -isEqual(const RuntimeValue & left, const RuntimeValue & right) : bool
+{static} -isNumeric(const RuntimeValue & value) : bool
+-pop(int line) : RuntimeValue
+{static} +printInstructions(const std::vector<Instruction> & instructions, std::ostream & out) : void
+-push(const RuntimeValue & value, int line) : void
+-requireStackItems(int count, int line) const : void
+-reset() : void
++run(std::ostream & out) : void
++setInstructions(std::vector<Instruction> instructions) : void
+{static} -toDouble(const RuntimeValue & value, int line) : double
+{static} -toInt(const RuntimeValue & value, int line) : int
+-validateJumpTarget(int target, int line) const : void
+__
+{static} +STACK_MAX : const int
+-bp : int
+-halted : bool
+-instructions : std::vector<Instruction>
+-output : std::string
+-pc : int
+-sp : int
+-stack : std::vector<RuntimeValue>
+}
+class "ICParser" as C_0005931520415943461417
+class C_0005931520415943461417 {
+{static} +parse(const std::string & text) : std::vector<Instruction>
+{static} +parseFile(const std::string & path) : std::vector<Instruction>
+{static} -parseLiteral(const std::string & value) : RuntimeValue
+{static} -parseOpCode(const std::string & value, int lineNumber) : OpCode
+__
+}
+C_0013396770724989915034 o-- C_0005459879916210408165 : +op
+C_0007620943392146260876 ..> C_0005459879916210408165
+C_0007620943392146260876 o-- C_0013396770724989915034 : -instructions
+C_0016560495222406787430 o-- C_0013396770724989915034 : -instructions
+C_0005931520415943461417 ..> C_0013396770724989915034
+C_0005931520415943461417 ..> C_0005459879916210408165
+
+'Generated with clang-uml, version 0.6.2
+'LLVM version Ubuntu clang version 18.1.3 (1ubuntu1)
+@enduml

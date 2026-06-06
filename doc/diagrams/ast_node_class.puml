@@ -1,0 +1,418 @@
+@startuml
+left to right direction
+hide methods
+hide attributes
+abstract "ASTNode" as C_0010084039401549399601
+abstract C_0010084039401549399601 {
++ASTNode(ASTNodeType t) : void
++~ASTNode() = default : void
+..
+{abstract} +accept(ASTVisitor * visitor) = 0 : void
+__
++column : int
++line : int
++nodeType : ASTNodeType
++scopeLevel : int
++semanticErrors : std::vector<std::string>
+}
+class "TypeNode" as C_0012048841344412525159
+class C_0012048841344412525159 {
++TypeNode(ASTNodeType t) : void
+__
++resolvedRef : int
++resolvedType : DataType
+}
+class "SimpleTypeNode" as C_0012919209593821010724
+class C_0012919209593821010724 {
++SimpleTypeNode(const std::string & n) : void
+..
++accept(ASTVisitor * visitor) : void
+__
++name : std::string
+}
+class "ArrayTypeNode" as C_0014293293386902422814
+class C_0014293293386902422814 {
++ArrayTypeNode(std::shared_ptr<TypeNode> idxType, std::shared_ptr<TypeNode> elemType) : void
+..
++accept(ASTVisitor * visitor) : void
+__
++elementType : std::shared_ptr<TypeNode>
++indexType : std::shared_ptr<TypeNode>
+}
+class "RecordTypeNode" as C_0006958857593692439568
+class C_0006958857593692439568 {
++RecordTypeNode() : void
+..
++accept(ASTVisitor * visitor) : void
+__
++fields : std::vector<std::shared_ptr<VarDeclarationNode>>
+}
+class "EnumeratedTypeNode" as C_0009559202237658596052
+class C_0009559202237658596052 {
++EnumeratedTypeNode() : void
+..
++accept(ASTVisitor * visitor) : void
+__
++elements : std::vector<std::string>
+}
+class "RangeTypeNode" as C_0009385607780758122196
+class C_0009385607780758122196 {
++RangeTypeNode(std::shared_ptr<ExpressionNode> low, std::shared_ptr<ExpressionNode> high) : void
+..
++accept(ASTVisitor * visitor) : void
+__
++baseType : DataType
++highBound : std::shared_ptr<ExpressionNode>
++lowBound : std::shared_ptr<ExpressionNode>
+}
+class "DeclarationNode" as C_0003120063148788483288
+class C_0003120063148788483288 {
++DeclarationNode(ASTNodeType t) : void
+__
++tabIndex : int
+}
+class "ConstDeclarationNode" as C_0015016730639549389732
+class C_0015016730639549389732 {
++ConstDeclarationNode(const std::string & n, std::shared_ptr<ExpressionNode> val) : void
+..
++accept(ASTVisitor * visitor) : void
+__
++name : std::string
++value : std::shared_ptr<ExpressionNode>
+}
+class "VarDeclarationNode" as C_0009215611012509513130
+class C_0009215611012509513130 {
++VarDeclarationNode(const std::string & n, std::shared_ptr<TypeNode> typeDef) : void
+..
++accept(ASTVisitor * visitor) : void
+__
++name : std::string
++typeDefinition : std::shared_ptr<TypeNode>
+}
+class "TypeDeclarationNode" as C_0011440541230635591492
+class C_0011440541230635591492 {
++TypeDeclarationNode(const std::string & n, std::shared_ptr<TypeNode> typeDef) : void
+..
++accept(ASTVisitor * visitor) : void
+__
++name : std::string
++typeDefinition : std::shared_ptr<TypeNode>
+}
+class "ProcedureDeclarationNode" as C_0007248026971493007362
+class C_0007248026971493007362 {
++ProcedureDeclarationNode(const std::string & n) : void
+..
++accept(ASTVisitor * visitor) : void
+__
++body : std::shared_ptr<BlockNode>
++localVariablesSize : int
++name : std::string
++parameters : std::vector<std::shared_ptr<VarDeclarationNode>>
+}
+class "FunctionDeclarationNode" as C_0006134343462098445284
+class C_0006134343462098445284 {
++FunctionDeclarationNode(const std::string & n, std::shared_ptr<TypeNode> retType) : void
+..
++accept(ASTVisitor * visitor) : void
+__
++body : std::shared_ptr<BlockNode>
++localVariablesSize : int
++name : std::string
++parameters : std::vector<std::shared_ptr<VarDeclarationNode>>
++returnType : std::shared_ptr<TypeNode>
+}
+class "ExpressionNode" as C_0006033692515928192516
+class C_0006033692515928192516 {
++ExpressionNode(ASTNodeType t) : void
+__
++evaluatedRef : int
++evaluatedType : DataType
+}
+class "IntegerLiteralNode" as C_0010751715810923394721
+class C_0010751715810923394721 {
++IntegerLiteralNode(int val) : void
+..
++accept(ASTVisitor * visitor) : void
+__
++value : int
+}
+class "RealLiteralNode" as C_0003094364744253593549
+class C_0003094364744253593549 {
++RealLiteralNode(double val) : void
+..
++accept(ASTVisitor * visitor) : void
+__
++value : double
+}
+class "StringLiteralNode" as C_0012464302193003132846
+class C_0012464302193003132846 {
++StringLiteralNode(const std::string & val) : void
+..
++accept(ASTVisitor * visitor) : void
+__
++value : std::string
+}
+class "CharLiteralNode" as C_0013761307373879702474
+class C_0013761307373879702474 {
++CharLiteralNode(char val) : void
+..
++accept(ASTVisitor * visitor) : void
+__
++value : char
+}
+class "BooleanLiteralNode" as C_0003597943100968157881
+class C_0003597943100968157881 {
++BooleanLiteralNode(bool val) : void
+..
++accept(ASTVisitor * visitor) : void
+__
++value : bool
+}
+class "VarAccessNode" as C_0002438579250963495846
+class C_0002438579250963495846 {
++VarAccessNode(const std::string & n) : void
+..
++accept(ASTVisitor * visitor) : void
+__
++isConstant : bool
++name : std::string
++tabIndex : int
+}
+class "ArrayAccessNode" as C_0008090455716854019128
+class C_0008090455716854019128 {
++ArrayAccessNode(std::shared_ptr<ExpressionNode> tgt, std::shared_ptr<ExpressionNode> idx) : void
+..
++accept(ASTVisitor * visitor) : void
+__
++index : std::shared_ptr<ExpressionNode>
++target : std::shared_ptr<ExpressionNode>
+}
+class "FieldAccessNode" as C_0008548120589375968118
+class C_0008548120589375968118 {
++FieldAccessNode(std::shared_ptr<ExpressionNode> tgt, const std::string & field) : void
+..
++accept(ASTVisitor * visitor) : void
+__
++fieldName : std::string
++tabIndex : int
++target : std::shared_ptr<ExpressionNode>
+}
+class "BinaryOpNode" as C_0007208322934724297614
+class C_0007208322934724297614 {
++BinaryOpNode(const std::string & o, std::shared_ptr<ExpressionNode> l, std::shared_ptr<ExpressionNode> r) : void
+..
++accept(ASTVisitor * visitor) : void
+__
++left : std::shared_ptr<ExpressionNode>
++op : std::string
++right : std::shared_ptr<ExpressionNode>
+}
+class "UnaryOpNode" as C_0017843226067210003954
+class C_0017843226067210003954 {
++UnaryOpNode(const std::string & o, std::shared_ptr<ExpressionNode> expr) : void
+..
++accept(ASTVisitor * visitor) : void
+__
++op : std::string
++operand : std::shared_ptr<ExpressionNode>
+}
+class "FunctionCallNode" as C_0000313379637217412418
+class C_0000313379637217412418 {
++FunctionCallNode(const std::string & n) : void
+..
++accept(ASTVisitor * visitor) : void
+__
++args : std::vector<std::shared_ptr<ExpressionNode>>
++name : std::string
++tabIndex : int
+}
+class "StatementNode" as C_0004559076356681288754
+class C_0004559076356681288754 {
++StatementNode(ASTNodeType type) : void
+__
+}
+class "CompoundStatementNode" as C_0012515152502087042825
+class C_0012515152502087042825 {
++CompoundStatementNode() : void
+..
++accept(ASTVisitor * visitor) : void
+__
++statements : std::vector<std::shared_ptr<StatementNode>>
+}
+class "AssignmentStatementNode" as C_0004763542320748817167
+class C_0004763542320748817167 {
++AssignmentStatementNode(std::shared_ptr<ExpressionNode> tgt, std::shared_ptr<ExpressionNode> val) : void
+..
++accept(ASTVisitor * visitor) : void
+__
++target : std::shared_ptr<ExpressionNode>
++value : std::shared_ptr<ExpressionNode>
+}
+class "IfStatementNode" as C_0007105972079434089734
+class C_0007105972079434089734 {
++IfStatementNode(std::shared_ptr<ExpressionNode> cond, std::shared_ptr<StatementNode> thenBr, std::shared_ptr<StatementNode> elseBr = nullptr) : void
+..
++accept(ASTVisitor * visitor) : void
+__
++condition : std::shared_ptr<ExpressionNode>
++elseBranch : std::shared_ptr<StatementNode>
++thenBranch : std::shared_ptr<StatementNode>
+}
+class "CaseStatementNode" as C_0002055004906211381329
+class C_0002055004906211381329 {
++CaseStatementNode(std::shared_ptr<ExpressionNode> expr) : void
+..
++accept(ASTVisitor * visitor) : void
+__
++cases : std::vector<std::pair<std::vector<std::shared_ptr<ExpressionNode>>,std::shared_ptr<StatementNode>>>
++elseBranch : std::shared_ptr<StatementNode>
++expression : std::shared_ptr<ExpressionNode>
+}
+class "WhileLoopNode" as C_0012837185269869799354
+class C_0012837185269869799354 {
++WhileLoopNode(std::shared_ptr<ExpressionNode> cond, std::shared_ptr<StatementNode> b) : void
+..
++accept(ASTVisitor * visitor) : void
+__
++body : std::shared_ptr<StatementNode>
++condition : std::shared_ptr<ExpressionNode>
+}
+class "ForLoopNode" as C_0008541768494765958583
+class C_0008541768494765958583 {
++ForLoopNode(const std::string & var, std::shared_ptr<ExpressionNode> start, std::shared_ptr<ExpressionNode> end, bool downTo, std::shared_ptr<StatementNode> b) : void
+..
++accept(ASTVisitor * visitor) : void
+__
++body : std::shared_ptr<StatementNode>
++counterVar : std::string
++endValue : std::shared_ptr<ExpressionNode>
++isDownTo : bool
++startValue : std::shared_ptr<ExpressionNode>
+}
+class "RepeatUntilNode" as C_0014358101027807115267
+class C_0014358101027807115267 {
++RepeatUntilNode(std::shared_ptr<ExpressionNode> cond) : void
+..
++accept(ASTVisitor * visitor) : void
+__
++body : std::vector<std::shared_ptr<StatementNode>>
++condition : std::shared_ptr<ExpressionNode>
+}
+class "ProcedureCallNode" as C_0005683767404816609342
+class C_0005683767404816609342 {
++ProcedureCallNode(const std::string & n) : void
+..
++accept(ASTVisitor * visitor) : void
+__
++args : std::vector<std::shared_ptr<ExpressionNode>>
++name : std::string
++tabIndex : int
+}
+class "EmptyStatementNode" as C_0010935706897922680965
+class C_0010935706897922680965 {
++EmptyStatementNode() : void
+..
++accept(ASTVisitor * visitor) : void
+__
+}
+class "BlockNode" as C_0017019606152562321204
+class C_0017019606152562321204 {
++BlockNode() : void
+..
++accept(ASTVisitor * visitor) : void
+__
++declarations : std::vector<std::shared_ptr<DeclarationNode>>
++statements : std::shared_ptr<CompoundStatementNode>
+}
+class "ProgramNode" as C_0000926281598854080372
+class C_0000926281598854080372 {
++ProgramNode(const std::string & n) : void
+..
++accept(ASTVisitor * visitor) : void
+__
++declarations : std::vector<std::shared_ptr<DeclarationNode>>
++name : std::string
++statements : std::shared_ptr<CompoundStatementNode>
+}
+C_0010084039401549399601 <|-- C_0012048841344412525159
+C_0012048841344412525159 <|-- C_0012919209593821010724
+C_0014293293386902422814 --> C_0012048841344412525159 : +indexType
+C_0014293293386902422814 --> C_0012048841344412525159 : +elementType
+C_0012048841344412525159 <|-- C_0014293293386902422814
+C_0006958857593692439568 o-- C_0009215611012509513130 : +fields
+C_0012048841344412525159 <|-- C_0006958857593692439568
+C_0012048841344412525159 <|-- C_0009559202237658596052
+C_0009385607780758122196 --> C_0006033692515928192516 : +lowBound
+C_0009385607780758122196 --> C_0006033692515928192516 : +highBound
+C_0012048841344412525159 <|-- C_0009385607780758122196
+C_0010084039401549399601 <|-- C_0003120063148788483288
+C_0015016730639549389732 --> C_0006033692515928192516 : +value
+C_0003120063148788483288 <|-- C_0015016730639549389732
+C_0009215611012509513130 --> C_0012048841344412525159 : +typeDefinition
+C_0003120063148788483288 <|-- C_0009215611012509513130
+C_0011440541230635591492 --> C_0012048841344412525159 : +typeDefinition
+C_0003120063148788483288 <|-- C_0011440541230635591492
+C_0007248026971493007362 o-- C_0009215611012509513130 : +parameters
+C_0007248026971493007362 --> C_0017019606152562321204 : +body
+C_0003120063148788483288 <|-- C_0007248026971493007362
+C_0006134343462098445284 o-- C_0009215611012509513130 : +parameters
+C_0006134343462098445284 --> C_0012048841344412525159 : +returnType
+C_0006134343462098445284 --> C_0017019606152562321204 : +body
+C_0003120063148788483288 <|-- C_0006134343462098445284
+C_0010084039401549399601 <|-- C_0006033692515928192516
+C_0006033692515928192516 <|-- C_0010751715810923394721
+C_0006033692515928192516 <|-- C_0003094364744253593549
+C_0006033692515928192516 <|-- C_0012464302193003132846
+C_0006033692515928192516 <|-- C_0013761307373879702474
+C_0006033692515928192516 <|-- C_0003597943100968157881
+C_0006033692515928192516 <|-- C_0002438579250963495846
+C_0008090455716854019128 --> C_0006033692515928192516 : +target
+C_0008090455716854019128 --> C_0006033692515928192516 : +index
+C_0006033692515928192516 <|-- C_0008090455716854019128
+C_0008548120589375968118 --> C_0006033692515928192516 : +target
+C_0006033692515928192516 <|-- C_0008548120589375968118
+C_0007208322934724297614 --> C_0006033692515928192516 : +left
+C_0007208322934724297614 --> C_0006033692515928192516 : +right
+C_0006033692515928192516 <|-- C_0007208322934724297614
+C_0017843226067210003954 --> C_0006033692515928192516 : +operand
+C_0006033692515928192516 <|-- C_0017843226067210003954
+C_0000313379637217412418 o-- C_0006033692515928192516 : +args
+C_0006033692515928192516 <|-- C_0000313379637217412418
+C_0010084039401549399601 <|-- C_0004559076356681288754
+C_0012515152502087042825 o-- C_0004559076356681288754 : +statements
+C_0004559076356681288754 <|-- C_0012515152502087042825
+C_0004763542320748817167 --> C_0006033692515928192516 : +target
+C_0004763542320748817167 --> C_0006033692515928192516 : +value
+C_0004559076356681288754 <|-- C_0004763542320748817167
+C_0007105972079434089734 --> C_0006033692515928192516 : +condition
+C_0007105972079434089734 --> C_0004559076356681288754 : +thenBranch
+C_0007105972079434089734 --> C_0004559076356681288754 : +elseBranch
+C_0004559076356681288754 <|-- C_0007105972079434089734
+C_0002055004906211381329 --> C_0006033692515928192516 : +expression
+C_0002055004906211381329 o-- C_0006033692515928192516 : +cases
+C_0002055004906211381329 o-- C_0004559076356681288754 : +cases
+C_0002055004906211381329 --> C_0004559076356681288754 : +elseBranch
+C_0004559076356681288754 <|-- C_0002055004906211381329
+C_0012837185269869799354 --> C_0006033692515928192516 : +condition
+C_0012837185269869799354 --> C_0004559076356681288754 : +body
+C_0004559076356681288754 <|-- C_0012837185269869799354
+C_0008541768494765958583 --> C_0006033692515928192516 : +startValue
+C_0008541768494765958583 --> C_0006033692515928192516 : +endValue
+C_0008541768494765958583 --> C_0004559076356681288754 : +body
+C_0004559076356681288754 <|-- C_0008541768494765958583
+C_0014358101027807115267 o-- C_0004559076356681288754 : +body
+C_0014358101027807115267 --> C_0006033692515928192516 : +condition
+C_0004559076356681288754 <|-- C_0014358101027807115267
+C_0005683767404816609342 o-- C_0006033692515928192516 : +args
+C_0004559076356681288754 <|-- C_0005683767404816609342
+C_0004559076356681288754 <|-- C_0010935706897922680965
+C_0017019606152562321204 o-- C_0003120063148788483288 : +declarations
+C_0017019606152562321204 --> C_0012515152502087042825 : +statements
+C_0010084039401549399601 <|-- C_0017019606152562321204
+C_0000926281598854080372 o-- C_0003120063148788483288 : +declarations
+C_0000926281598854080372 --> C_0012515152502087042825 : +statements
+C_0010084039401549399601 <|-- C_0000926281598854080372
+
+'Generated with clang-uml, version 0.6.2
+'LLVM version Ubuntu clang version 18.1.3 (1ubuntu1)
+@enduml
