@@ -562,19 +562,33 @@ void SemanticVisitor::visit(RecordTypeNode *node)
         if (field) field->accept(this);
     }
 
-    int totalRecordSize = 0;
+    std::vector<int> recordFields;
     int currField = symbolTable.btab[symbolTable.currentBlock].last;
     while (currField > 0 && currField > startIdx) {
         if (symbolTable.tab[currField].obj == ObjectType::VARIABLE) {
-            if (symbolTable.tab[currField].type == DataType::ARRAY) {
-                totalRecordSize += symbolTable.atab[symbolTable.tab[currField].ref].size;
-            } else if (symbolTable.tab[currField].type == DataType::RECORD) {
-                totalRecordSize += symbolTable.btab[symbolTable.tab[currField].ref].vsze;
-            } else {
-                totalRecordSize += getDataTypeSize(symbolTable.tab[currField].type);
-            }
+            recordFields.push_back(currField);
         }
         currField = symbolTable.tab[currField].link;
+    }
+    std::reverse(recordFields.begin(), recordFields.end());
+
+    int totalRecordSize = 0;
+    int currentOffset = 0;
+
+    for (int fIndex : recordFields) {
+        int size = 0;
+        if (symbolTable.tab[fIndex].type == DataType::ARRAY) {
+            size = symbolTable.atab[symbolTable.tab[fIndex].ref].size;
+        } else if (symbolTable.tab[fIndex].type == DataType::RECORD) {
+            size = symbolTable.btab[symbolTable.tab[fIndex].ref].vsze;
+        } else {
+            size = getDataTypeSize(symbolTable.tab[fIndex].type);
+        }
+        
+        symbolTable.tab[fIndex].adr = currentOffset;
+        
+        currentOffset += size;
+        totalRecordSize += size;
     }
 
     symbolTable.btab[symbolTable.currentBlock].vsze = totalRecordSize;

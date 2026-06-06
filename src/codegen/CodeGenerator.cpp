@@ -14,6 +14,7 @@ void CodeGenerator::generate(ProgramNode *root)
     instructions.clear();
     subroutineAddresses.clear();
     unresolvedCalls.clear();
+    currentLevel = 0;
 
     if (root) {
         root->accept(this);
@@ -88,7 +89,9 @@ void CodeGenerator::visit(ProcedureDeclarationNode *node)
     int totalMem = 3 + symbolTable->btab[blockRef].psze + symbolTable->btab[blockRef].vsze;
     emit(OpCode::INT, 0, totalMem);
 
+    currentLevel++;
     if (node->body) node->body->accept(this);
+    currentLevel--;
 
     emit(OpCode::RET, 0, 0);
     g_currentLevel--;
@@ -112,8 +115,10 @@ void CodeGenerator::visit(FunctionDeclarationNode *node)
     int totalMem = 3 + returnValueSize + symbolTable->btab[blockRef].psze + symbolTable->btab[blockRef].vsze;
     emit(OpCode::INT, 0, totalMem);
 
+    currentLevel++;
     if (node->body) node->body->accept(this);
-
+    currentLevel--;
+    
     emit(OpCode::RET, 0, 0);
     g_currentLevel--;
     backpatch(skipJmp, getNextAddress());
@@ -170,6 +175,7 @@ void CodeGenerator::visit(VarAccessNode *node)
     
     if (symbolTable->tab[index].obj == ObjectType::CONSTANT) {
         emitLiteral(0, symbolTable->tab[index].adr);
+<<<<<<< HEAD
     }
     else {
         int diffLevel = g_currentLevel - symbolTable->tab[index].lev;
@@ -188,6 +194,10 @@ void CodeGenerator::visit(VarAccessNode *node)
             // Variabel tunggal biasa (bukan array / bkn parameter var): ambil nilainya
             emit(OpCode::LOD, diffLevel, symbolTable->tab[index].adr);
         }
+=======
+    } else {
+        emit(OpCode::LOD, currentLevel - symbolTable->tab[index].lev, symbolTable->tab[index].adr);
+>>>>>>> f83766b8f993cbab591949ed002a797bd84f5a3c
     }
 }
 
@@ -261,6 +271,7 @@ void CodeGenerator::visit(AssignmentStatementNode *node)
     }
     //  Kasus target adalah Variabel Tunggal biasa
     else if (auto varTarget = std::dynamic_pointer_cast<VarAccessNode>(node->target)) {
+<<<<<<< HEAD
         int tabIdx = varTarget->tabIndex;
         int diffLevel = g_currentLevel - symbolTable->tab[tabIdx].lev;
 
@@ -272,6 +283,10 @@ void CodeGenerator::visit(AssignmentStatementNode *node)
             // Variabel biasa: gunakan Store Word biasa
             emit(OpCode::STO, diffLevel, symbolTable->tab[tabIdx].adr);
         }
+=======
+        if (node->value) node->value->accept(this);
+        emit(OpCode::STO, currentLevel - symbolTable->tab[varTarget->tabIndex].lev, symbolTable->tab[varTarget->tabIndex].adr);
+>>>>>>> f83766b8f993cbab591949ed002a797bd84f5a3c
     }
     else if (auto fieldTarget = std::dynamic_pointer_cast<FieldAccessNode>(node->target)) {
         if (auto varTarget = std::dynamic_pointer_cast<VarAccessNode>(fieldTarget->target)) {
@@ -398,8 +413,9 @@ void CodeGenerator::visit(ForLoopNode *node)
     }
 
     int counterAdr = symbolTable->tab[index].adr;
-    int counterLev = symbolTable->tab[index].lev;
+    int counterLev = currentLevel - symbolTable->tab[index].lev;
     int counterDiffLevel = g_currentLevel - counterLev;
+    
 
     if (node->startValue) node->startValue->accept(this);
     emit(OpCode::STO, counterDiffLevel, counterAdr);
@@ -483,10 +499,9 @@ void CodeGenerator::visit(ProcedureCallNode *node)
                 int index = varNode->tabIndex;
                 int lev = symbolTable->tab[index].lev;
                 int adr = symbolTable->tab[index].adr;
-
-                emit(OpCode::STO, lev, adr);
-            }
-            else {
+                
+                emit(OpCode::STO, currentLevel - lev, adr);
+            } else {
                 std::cerr << "CodeGen Error: readln argument must be a variable.\n";
             }
         }
@@ -496,7 +511,7 @@ void CodeGenerator::visit(ProcedureCallNode *node)
             arg->accept(this);
 
         int callIdx = getNextAddress();
-        emit(OpCode::CAL, symbolTable->tab[node->tabIndex].lev, 0);
+        emit(OpCode::CAL, currentLevel - symbolTable->tab[node->tabIndex].lev, 0);
         instructions[callIdx].argCount = static_cast<int>(node->args.size());
         unresolvedCalls.push_back({callIdx, node->tabIndex});
     }
@@ -509,9 +524,10 @@ void CodeGenerator::visit(FunctionCallNode *node)
         arg->accept(this);
 
     int callIdx = getNextAddress();
-    emit(OpCode::CAL, symbolTable->tab[node->tabIndex].lev, 0);
+    emit(OpCode::CAL, currentLevel - symbolTable->tab[node->tabIndex].lev, 0);
     instructions[callIdx].argCount = static_cast<int>(node->args.size());
     instructions[callIdx].returnsValue = true;
+    
     unresolvedCalls.push_back({callIdx, node->tabIndex});
 }
 

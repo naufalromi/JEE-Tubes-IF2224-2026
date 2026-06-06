@@ -24,6 +24,7 @@ private:
     void emit(OpCode op, int level, int operand);
     void emitLiteral(int level, RuntimeValue value);
     int getNextAddress() const;
+    int currentLevel = 0;
     void backpatch(int instructionIndex, int targetAddress);
     void resolveFunctionCalls();
 
