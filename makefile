@@ -21,6 +21,8 @@ SRCS = $(SRC_DIR)/main.cpp\
 	   $(wildcard $(CODEGEN_DIR)/*.cpp)\
 	   $(wildcard $(INTERPRETER_DIR)/*.cpp)
 
+HDRS = $(shell find $(SRC_DIR) -name '*.hpp')
+
 # Menentuka file Object (.o)
 # Mengubah path src/xxx/file.cpp menjadi build/xxx/file.o
 OBJS = $(patsubst src/%,build/%,$(SRCS:.cpp=.o))
@@ -38,7 +40,7 @@ $(TARGET) : $(OBJS)
 
 
 # Proses Compile merubah .cpp menjadi .o
-build/%.o: src/%.cpp
+build/%.o: src/%.cpp $(HDRS)
 	@mkdir -p $(dir $@)
 	@echo "Compiling $<..."
 	$(CXX) $(CXXFLAGS) -c $< -o $@

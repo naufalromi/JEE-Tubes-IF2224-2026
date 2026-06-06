@@ -164,12 +164,16 @@ void Interpreter::execute(const Instruction& instr, std::ostream& out)
             }
 
             int newBase = sp - argCount + 1;
-            ensureStackIndex(newBase + 2 + argCount, line);
+            int returnSlotCount = instr.returnsValue ? 1 : 0;
+            ensureStackIndex(newBase + 2 + returnSlotCount + argCount, line);
             stack[newBase] = base(instr.level);
             stack[newBase + 1] = bp;
             stack[newBase + 2] = pc;
+            if (instr.returnsValue) {
+                stack[newBase + 3] = 0;
+            }
             for (int i = 0; i < argCount; i++) {
-                stack[newBase + 3 + i] = args[i];
+                stack[newBase + 3 + returnSlotCount + i] = args[i];
             }
 
             bp = newBase;
@@ -198,11 +202,23 @@ void Interpreter::execute(const Instruction& instr, std::ostream& out)
 
         case OpCode::RET:
             ensureStackIndex(bp + 2, line);
+            {
+                bool returnsValue = false;
+                int returnAddress = toInt(stack[bp + 2], line);
+                if (returnAddress > 0 && returnAddress <= static_cast<int>(instructions.size())) {
+                    const Instruction& callInstr = instructions[returnAddress - 1];
+                    returnsValue = callInstr.op == OpCode::CAL && callInstr.returnsValue;
+                }
+                RuntimeValue returnValue = returnsValue ? stack[bp + 3] : RuntimeValue(0);
+
             sp = bp - 1;
             pc = toInt(stack[bp + 2], line);
             bp = toInt(stack[bp + 1], line);
             if (pc == 0) {
                 halted = true;
+            } else if (returnsValue) {
+                push(returnValue, line);
+            }
             }
             break;
         case OpCode::STA: { // STORE ARRAY

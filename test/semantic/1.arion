@@ -1,18 +1,112 @@
-program test1;
+program GameOfLife;
 
-var
-  x: Integer;
+const
+    ROWS == 16;
+    COLS == 32;
 
-procedure SetLocal();
-var
-  x: Integer;
+type 
+    { membuat element matrix }
+    arrmatrix == array [0..COLS] of Integer;
+
+type 
+    { membuat matrix}
+    Tmatrix == array [0..ROWS] of arrmatrix;
+
+var 
+    front: Tmatrix;
+    back: Tmatrix;
+    i, j: Integer;
+
+procedure display(var matrix : Tmatrix);
+    var 
+        y, x : Integer;
+
+    begin
+        for y := 0 to ROWS do
+            begin   
+            write(y);
+                for x := 0 to COLS do
+                begin
+                    if (matrix[y][x] == 1) then
+                        write('#')
+                    else 
+                        write('.');
+                end;
+                writeln('');
+            end;
+    end;
+
+
+
+function modn(a,b : Integer) : Integer;
+    begin
+        modn := (a MOD b + b) MOD b;
+    end;
+
+function countnbor(cx, cy : Integer; var matrix : Tmatrix) : Integer;
+    var 
+        nbors,dx,dy,x,y : Integer;
+    begin
+        nbors := 0;
+        for dx := -1 to 1 do
+            begin
+                for dy := -1 to 1 do
+                begin
+                    if (NOT((dx == 0 ) and (dy == 0))) then
+                        x := modn(cx + dx, COLS + 1);
+                        y := modn(cy + dy, ROWS + 1);
+                        if (matrix[y][x] == 1) then
+                            nbors := nbors + 1;
+                end;
+            end;
+        countnbor := nbors;
+    end;
+        
+procedure next(var back,front : Tmatrix);
+    var 
+        nbors : Integer;
+        y,x : Integer;
+    
+    begin
+        for y := 0 to ROWS do
+            begin
+                for x := 0 to COLS do
+                begin
+                    nbors := countnbor( x, y, front); 
+                    if (front[y][x] == 1) then
+                        if ((nbors == 2) OR (nbors == 3) ) then
+                            back[y][x] :=  1
+                        else 
+                            back[y][x] := 0
+                    else
+                        if (nbors == 3) then
+                            back[y][x] := 1
+                        else 
+                             back[y][x] := 0
+                end;
+            end;
+    end;
+
+
 begin
-  x := 10;
-  if x > 5 then
-    x := x + 1;
-end;
 
-begin
-  x := 1;
-  SetLocal();
+    {   012 }
+    { 0 .*. }
+    { 1 ..* }
+    { 2 *** }
+
+    front[0][1] := 1;
+    front[1][2] := 1;
+    front[2][0] := 1;
+    front[2][1] := 1;
+    front[2][2] := 1;
+    
+    writeln('--- Generasi Awal ---');
+    display(front);
+    
+    next(back, front);
+    
+    writeln('--- Generasi Berikutnya ---');
+    display(back);
+
 end.

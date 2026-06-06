@@ -47,6 +47,7 @@ struct Instruction {
     bool hasLiteral;
     RuntimeValue literal;
     int argCount = 0;
+    bool returnsValue = false;
 
     Instruction(OpCode op, int level, int operand)
         : line(-1),

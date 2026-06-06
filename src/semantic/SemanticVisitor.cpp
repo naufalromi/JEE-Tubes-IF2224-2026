@@ -222,7 +222,7 @@ void SemanticVisitor::visit(ProcedureDeclarationNode *node)
 
         // Alokasi Pointer
         if (symbolTable.tab[pIndex].nrm == 0) {
-            size = 4; 
+            size = 1; 
         } 
         else {
             // Jika nrm == 1 (Pass by Value biasa), hitung ukuran riilnya
@@ -327,6 +327,9 @@ void SemanticVisitor::visit(FunctionDeclarationNode *node)
     if (nameIndex == -1) {
         reportError(node, "Failed to register function name in local scope: " + node->name);
     }
+    else {
+        symbolTable.tab[nameIndex].nrm = 1;
+    }
 
     int currentOffset = 3;
     
@@ -368,7 +371,9 @@ void SemanticVisitor::visit(FunctionDeclarationNode *node)
 
     for (int pIndex : paramVars) {
         int size = 0;
-        if (symbolTable.tab[pIndex].type == DataType::ARRAY) {
+        if (symbolTable.tab[pIndex].nrm == 0) {
+            size = 1;
+        } else if (symbolTable.tab[pIndex].type == DataType::ARRAY) {
             size = symbolTable.atab[symbolTable.tab[pIndex].ref].size;
         } else if (symbolTable.tab[pIndex].type == DataType::RECORD) {
             size = symbolTable.btab[symbolTable.tab[pIndex].ref].vsze;
@@ -1014,6 +1019,10 @@ void SemanticVisitor::visit(ForLoopNode *node)
     }
     else if (symbolTable.tab[index].type != DataType::INTEGER) {
         reportError(node, "For loop counter must be integer");
+        node->counterTabIndex = index;
+    }
+    else {
+        node->counterTabIndex = index;
     }
 
     // Evaluate start value (must be integer)

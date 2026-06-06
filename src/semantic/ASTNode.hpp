@@ -352,6 +352,7 @@ public:
     std::shared_ptr<ExpressionNode> endValue;
     bool isDownTo; // false untuk 'to', true untuk 'downto'
     std::shared_ptr<StatementNode> body;
+    int counterTabIndex = 0;
 
     ForLoopNode(const std::string& var, std::shared_ptr<ExpressionNode> start, std::shared_ptr<ExpressionNode> end, bool downTo, std::shared_ptr<StatementNode> b)
         : StatementNode(ASTNodeType::ForStatement), counterVar(var), startValue(start), endValue(end), isDownTo(downTo), body(b) {}

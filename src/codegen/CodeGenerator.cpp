@@ -100,6 +100,7 @@ void CodeGenerator::visit(FunctionDeclarationNode *node)
 {
     if (!node) return;
 
+    g_currentLevel++;
     int skipJmp = getNextAddress();
     emit(OpCode::JMP, 0, 0);
 
@@ -107,12 +108,14 @@ void CodeGenerator::visit(FunctionDeclarationNode *node)
     subroutineAddresses[node->tabIndex] = funcStart;
 
     int blockRef = symbolTable->tab[node->tabIndex].ref;
-    int totalMem = 3 + symbolTable->btab[blockRef].psze + symbolTable->btab[blockRef].vsze;
+    int returnValueSize = 1;
+    int totalMem = 3 + returnValueSize + symbolTable->btab[blockRef].psze + symbolTable->btab[blockRef].vsze;
     emit(OpCode::INT, 0, totalMem);
 
     if (node->body) node->body->accept(this);
 
     emit(OpCode::RET, 0, 0);
+    g_currentLevel--;
     backpatch(skipJmp, getNextAddress());
 }
 
@@ -375,15 +378,9 @@ void CodeGenerator::visit(ForLoopNode *node)
 {
     if (!node) return;
 
-    int index = 0;
-    for (int i = symbolTable->tabTop; i > 0; i = symbolTable->tab[i].link) {
-        if (symbolTable->tab[i].name == node->counterVar && symbolTable->tab[i].obj == ObjectType::VARIABLE) {
-            index = i;
-            break;
-        }
-    }
-
+    int index = node->counterTabIndex;
     if (index == 0) {
+        std::cerr << "CodeGen Error: unresolved for-loop counter '" << node->counterVar << "'.\n";
         return;
     }
 
@@ -501,6 +498,7 @@ void CodeGenerator::visit(FunctionCallNode *node)
     int callIdx = getNextAddress();
     emit(OpCode::CAL, symbolTable->tab[node->tabIndex].lev, 0);
     instructions[callIdx].argCount = static_cast<int>(node->args.size());
+    instructions[callIdx].returnsValue = true;
     unresolvedCalls.push_back({callIdx, node->tabIndex});
 }
 
