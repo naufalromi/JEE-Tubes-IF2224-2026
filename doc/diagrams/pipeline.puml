@@ -1,0 +1,30 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam componentStyle uml2
+
+actor User
+
+package "Compiler Pipeline" {
+    [Lexical Analyzer] as Lexer
+    [Syntax Analyzer] as Parser
+    [Semantic Analyzer] as Semantic
+    [Code Generator] as CodeGen
+    [VM / Interpreter] as Interpreter
+}
+
+database "File" {
+    [Source Code (.arion)] as Source
+    [Bytecode (.ic)] as ObjectFile
+}
+
+User --> Source : Menulis kode
+Source --> Lexer : Character stream
+Lexer --> Parser : Tokens
+Parser --> Semantic : Parse Tree (AST)
+Semantic --> CodeGen : Decorated AST & Symbol Table
+CodeGen --> ObjectFile : Export / Save
+ObjectFile --> Interpreter : In-memory Instructions
+Interpreter --> User : Output Program
+
+@enduml

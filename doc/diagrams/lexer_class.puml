@@ -1,0 +1,107 @@
+@startuml
+enum "TokenType" as C_0013637656572283312389
+enum C_0013637656572283312389 {
+PROGRAMSY
+CONSTSY
+TYPESY
+VARSY
+FUNCTIONSY
+PROCEDURESY
+ARRAYSY
+RECORDSY
+BEGINSY
+IFSY
+CASESY
+REPEATSY
+WHILESY
+FORSY
+ENDSY
+ELSESY
+UNTILSY
+OFSY
+DOSY
+TOSY
+DOWNTOSY
+THENSY
+NOTSY
+IDIV
+IMOD
+ANDSY
+ORSY
+IDENT
+INTCON
+REALCON
+CHARCON
+STRINGCON
+EQL
+NEQ
+GTR
+GEQ
+LSS
+LEQ
+BECOMES
+PLUS
+MINUS
+TIMES
+RDIV
+LPARENT
+RPARENT
+LBRACK
+RBRACK
+COMMA
+SEMICOLON
+PERIOD
+COLON
+COMMENT
+END_OF_FILE
+ERROR_TOKEN
+}
+class "Token" as C_0005168770972526355524
+class C_0005168770972526355524 {
++Token(TokenType t, std::string v, int l, int c) : void
++Token(TokenType t, ErrorType e, int l, int c, std::string detail = "") : void
+__
++column : int
++errorType : ErrorType
++line : int
++type : TokenType
++value : std::string
+}
+class "LexerState" as C_0006387157552584423971
+class C_0006387157552584423971 {
++LexerState(const std::string & src) : void
+..
++advance() : char
++isAtEnd() const : bool
++peek() const : char
++peekNext() const : char
+__
++currentColumn : int
++currentIndex : size_t
++currentLine : int
++source : const std::string &
+}
+class "LexicalAnalyzer" as C_0012058251749382637975
+class C_0012058251749382637975 {
++LexicalAnalyzer(const std::string & sourceCode) : void
++~LexicalAnalyzer() : void
+..
++getErrorTokens() const : const std::vector<Token> &
++getNextToken() : Token
+-initKeywordsArray() : void
+-skipWhitespace() : void
++tokenizeAll() : std::vector<Token>
+__
+-errorTokens : std::vector<Token>
+-keywordsArray : std::vector<std::string>
+-state : LexerState
+-tokenTypeArray : std::vector<TokenType>
+}
+C_0005168770972526355524 o-- C_0013637656572283312389 : +type
+C_0012058251749382637975 o-- C_0006387157552584423971 : -state
+C_0012058251749382637975 o-- C_0013637656572283312389 : -tokenTypeArray
+C_0012058251749382637975 o-- C_0005168770972526355524 : -errorTokens
+
+'Generated with clang-uml, version 0.6.2
+'LLVM version Ubuntu clang version 18.1.3 (1ubuntu1)
+@enduml

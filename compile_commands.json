@@ -1,0 +1,363 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "-Wall",
+      "-Wextra",
+      "-std=c++17",
+      "-g",
+      "-O0",
+      "-fsanitize=address",
+      "-fsanitize=undefined",
+      "-c",
+      "-o",
+      "build/main.o",
+      "src/main.cpp"
+    ],
+    "directory": "/home/winter/college/JEE-Tubes-IF2224-2026",
+    "file": "/home/winter/college/JEE-Tubes-IF2224-2026/src/main.cpp",
+    "output": "/home/winter/college/JEE-Tubes-IF2224-2026/build/main.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "-Wall",
+      "-Wextra",
+      "-std=c++17",
+      "-g",
+      "-O0",
+      "-fsanitize=address",
+      "-fsanitize=undefined",
+      "-c",
+      "-o",
+      "build/common/Error.o",
+      "src/common/Error.cpp"
+    ],
+    "directory": "/home/winter/college/JEE-Tubes-IF2224-2026",
+    "file": "/home/winter/college/JEE-Tubes-IF2224-2026/src/common/Error.cpp",
+    "output": "/home/winter/college/JEE-Tubes-IF2224-2026/build/common/Error.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "-Wall",
+      "-Wextra",
+      "-std=c++17",
+      "-g",
+      "-O0",
+      "-fsanitize=address",
+      "-fsanitize=undefined",
+      "-c",
+      "-o",
+      "build/common/Instruction.o",
+      "src/common/Instruction.cpp"
+    ],
+    "directory": "/home/winter/college/JEE-Tubes-IF2224-2026",
+    "file": "/home/winter/college/JEE-Tubes-IF2224-2026/src/common/Instruction.cpp",
+    "output": "/home/winter/college/JEE-Tubes-IF2224-2026/build/common/Instruction.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "-Wall",
+      "-Wextra",
+      "-std=c++17",
+      "-g",
+      "-O0",
+      "-fsanitize=address",
+      "-fsanitize=undefined",
+      "-c",
+      "-o",
+      "build/common/Reader.o",
+      "src/common/Reader.cpp"
+    ],
+    "directory": "/home/winter/college/JEE-Tubes-IF2224-2026",
+    "file": "/home/winter/college/JEE-Tubes-IF2224-2026/src/common/Reader.cpp",
+    "output": "/home/winter/college/JEE-Tubes-IF2224-2026/build/common/Reader.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "-Wall",
+      "-Wextra",
+      "-std=c++17",
+      "-g",
+      "-O0",
+      "-fsanitize=address",
+      "-fsanitize=undefined",
+      "-c",
+      "-o",
+      "build/common/RuntimeValue.o",
+      "src/common/RuntimeValue.cpp"
+    ],
+    "directory": "/home/winter/college/JEE-Tubes-IF2224-2026",
+    "file": "/home/winter/college/JEE-Tubes-IF2224-2026/src/common/RuntimeValue.cpp",
+    "output": "/home/winter/college/JEE-Tubes-IF2224-2026/build/common/RuntimeValue.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "-Wall",
+      "-Wextra",
+      "-std=c++17",
+      "-g",
+      "-O0",
+      "-fsanitize=address",
+      "-fsanitize=undefined",
+      "-c",
+      "-o",
+      "build/common/Token.o",
+      "src/common/Token.cpp"
+    ],
+    "directory": "/home/winter/college/JEE-Tubes-IF2224-2026",
+    "file": "/home/winter/college/JEE-Tubes-IF2224-2026/src/common/Token.cpp",
+    "output": "/home/winter/college/JEE-Tubes-IF2224-2026/build/common/Token.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "-Wall",
+      "-Wextra",
+      "-std=c++17",
+      "-g",
+      "-O0",
+      "-fsanitize=address",
+      "-fsanitize=undefined",
+      "-c",
+      "-o",
+      "build/common/Tree.o",
+      "src/common/Tree.cpp"
+    ],
+    "directory": "/home/winter/college/JEE-Tubes-IF2224-2026",
+    "file": "/home/winter/college/JEE-Tubes-IF2224-2026/src/common/Tree.cpp",
+    "output": "/home/winter/college/JEE-Tubes-IF2224-2026/build/common/Tree.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "-Wall",
+      "-Wextra",
+      "-std=c++17",
+      "-g",
+      "-O0",
+      "-fsanitize=address",
+      "-fsanitize=undefined",
+      "-c",
+      "-o",
+      "build/common/Writer.o",
+      "src/common/Writer.cpp"
+    ],
+    "directory": "/home/winter/college/JEE-Tubes-IF2224-2026",
+    "file": "/home/winter/college/JEE-Tubes-IF2224-2026/src/common/Writer.cpp",
+    "output": "/home/winter/college/JEE-Tubes-IF2224-2026/build/common/Writer.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "-Wall",
+      "-Wextra",
+      "-std=c++17",
+      "-g",
+      "-O0",
+      "-fsanitize=address",
+      "-fsanitize=undefined",
+      "-c",
+      "-o",
+      "build/lexer/Lexer.o",
+      "src/lexer/Lexer.cpp"
+    ],
+    "directory": "/home/winter/college/JEE-Tubes-IF2224-2026",
+    "file": "/home/winter/college/JEE-Tubes-IF2224-2026/src/lexer/Lexer.cpp",
+    "output": "/home/winter/college/JEE-Tubes-IF2224-2026/build/lexer/Lexer.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "-Wall",
+      "-Wextra",
+      "-std=c++17",
+      "-g",
+      "-O0",
+      "-fsanitize=address",
+      "-fsanitize=undefined",
+      "-c",
+      "-o",
+      "build/lexer/SpecificScanners.o",
+      "src/lexer/SpecificScanners.cpp"
+    ],
+    "directory": "/home/winter/college/JEE-Tubes-IF2224-2026",
+    "file": "/home/winter/college/JEE-Tubes-IF2224-2026/src/lexer/SpecificScanners.cpp",
+    "output": "/home/winter/college/JEE-Tubes-IF2224-2026/build/lexer/SpecificScanners.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "-Wall",
+      "-Wextra",
+      "-std=c++17",
+      "-g",
+      "-O0",
+      "-fsanitize=address",
+      "-fsanitize=undefined",
+      "-c",
+      "-o",
+      "build/syntax/Parser.o",
+      "src/syntax/Parser.cpp"
+    ],
+    "directory": "/home/winter/college/JEE-Tubes-IF2224-2026",
+    "file": "/home/winter/college/JEE-Tubes-IF2224-2026/src/syntax/Parser.cpp",
+    "output": "/home/winter/college/JEE-Tubes-IF2224-2026/build/syntax/Parser.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "-Wall",
+      "-Wextra",
+      "-std=c++17",
+      "-g",
+      "-O0",
+      "-fsanitize=address",
+      "-fsanitize=undefined",
+      "-c",
+      "-o",
+      "build/semantic/ASTBuilder.o",
+      "src/semantic/ASTBuilder.cpp"
+    ],
+    "directory": "/home/winter/college/JEE-Tubes-IF2224-2026",
+    "file": "/home/winter/college/JEE-Tubes-IF2224-2026/src/semantic/ASTBuilder.cpp",
+    "output": "/home/winter/college/JEE-Tubes-IF2224-2026/build/semantic/ASTBuilder.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "-Wall",
+      "-Wextra",
+      "-std=c++17",
+      "-g",
+      "-O0",
+      "-fsanitize=address",
+      "-fsanitize=undefined",
+      "-c",
+      "-o",
+      "build/semantic/ASTPrinter.o",
+      "src/semantic/ASTPrinter.cpp"
+    ],
+    "directory": "/home/winter/college/JEE-Tubes-IF2224-2026",
+    "file": "/home/winter/college/JEE-Tubes-IF2224-2026/src/semantic/ASTPrinter.cpp",
+    "output": "/home/winter/college/JEE-Tubes-IF2224-2026/build/semantic/ASTPrinter.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "-Wall",
+      "-Wextra",
+      "-std=c++17",
+      "-g",
+      "-O0",
+      "-fsanitize=address",
+      "-fsanitize=undefined",
+      "-c",
+      "-o",
+      "build/semantic/SemanticAnalyzer.o",
+      "src/semantic/SemanticAnalyzer.cpp"
+    ],
+    "directory": "/home/winter/college/JEE-Tubes-IF2224-2026",
+    "file": "/home/winter/college/JEE-Tubes-IF2224-2026/src/semantic/SemanticAnalyzer.cpp",
+    "output": "/home/winter/college/JEE-Tubes-IF2224-2026/build/semantic/SemanticAnalyzer.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "-Wall",
+      "-Wextra",
+      "-std=c++17",
+      "-g",
+      "-O0",
+      "-fsanitize=address",
+      "-fsanitize=undefined",
+      "-c",
+      "-o",
+      "build/semantic/SemanticVisitor.o",
+      "src/semantic/SemanticVisitor.cpp"
+    ],
+    "directory": "/home/winter/college/JEE-Tubes-IF2224-2026",
+    "file": "/home/winter/college/JEE-Tubes-IF2224-2026/src/semantic/SemanticVisitor.cpp",
+    "output": "/home/winter/college/JEE-Tubes-IF2224-2026/build/semantic/SemanticVisitor.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "-Wall",
+      "-Wextra",
+      "-std=c++17",
+      "-g",
+      "-O0",
+      "-fsanitize=address",
+      "-fsanitize=undefined",
+      "-c",
+      "-o",
+      "build/semantic/SymbolTable.o",
+      "src/semantic/SymbolTable.cpp"
+    ],
+    "directory": "/home/winter/college/JEE-Tubes-IF2224-2026",
+    "file": "/home/winter/college/JEE-Tubes-IF2224-2026/src/semantic/SymbolTable.cpp",
+    "output": "/home/winter/college/JEE-Tubes-IF2224-2026/build/semantic/SymbolTable.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "-Wall",
+      "-Wextra",
+      "-std=c++17",
+      "-g",
+      "-O0",
+      "-fsanitize=address",
+      "-fsanitize=undefined",
+      "-c",
+      "-o",
+      "build/codegen/CodeGenerator.o",
+      "src/codegen/CodeGenerator.cpp"
+    ],
+    "directory": "/home/winter/college/JEE-Tubes-IF2224-2026",
+    "file": "/home/winter/college/JEE-Tubes-IF2224-2026/src/codegen/CodeGenerator.cpp",
+    "output": "/home/winter/college/JEE-Tubes-IF2224-2026/build/codegen/CodeGenerator.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "-Wall",
+      "-Wextra",
+      "-std=c++17",
+      "-g",
+      "-O0",
+      "-fsanitize=address",
+      "-fsanitize=undefined",
+      "-c",
+      "-o",
+      "build/interpreter/ICParser.o",
+      "src/interpreter/ICParser.cpp"
+    ],
+    "directory": "/home/winter/college/JEE-Tubes-IF2224-2026",
+    "file": "/home/winter/college/JEE-Tubes-IF2224-2026/src/interpreter/ICParser.cpp",
+    "output": "/home/winter/college/JEE-Tubes-IF2224-2026/build/interpreter/ICParser.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "-Wall",
+      "-Wextra",
+      "-std=c++17",
+      "-g",
+      "-O0",
+      "-fsanitize=address",
+      "-fsanitize=undefined",
+      "-c",
+      "-o",
+      "build/interpreter/Interpreter.o",
+      "src/interpreter/Interpreter.cpp"
+    ],
+    "directory": "/home/winter/college/JEE-Tubes-IF2224-2026",
+    "file": "/home/winter/college/JEE-Tubes-IF2224-2026/src/interpreter/Interpreter.cpp",
+    "output": "/home/winter/college/JEE-Tubes-IF2224-2026/build/interpreter/Interpreter.o"
+  }
+]

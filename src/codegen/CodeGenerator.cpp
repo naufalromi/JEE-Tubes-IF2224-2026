@@ -231,8 +231,11 @@ void CodeGenerator::visit(FieldAccessNode *node)
 {
     if (auto varTarget = std::dynamic_pointer_cast<VarAccessNode>(node->target)) {
         emit(OpCode::LDA, 0, symbolTable->tab[varTarget->tabIndex].adr);
-        emitLiteral(0, 0);       // Offset dummy
-        emit(OpCode::OPR, 0, 2); // ADD
+        
+        int fieldOffset = symbolTable->tab[node->tabIndex].adr;
+        emitLiteral(0, fieldOffset); 
+        
+        emit(OpCode::OPR, 0, 2);
         emit(OpCode::LDI, 0, 0);
     }
 }
@@ -268,6 +271,16 @@ void CodeGenerator::visit(AssignmentStatementNode *node)
         else {
             // Variabel biasa: gunakan Store Word biasa
             emit(OpCode::STO, diffLevel, symbolTable->tab[tabIdx].adr);
+        }
+    }
+    else if (auto fieldTarget = std::dynamic_pointer_cast<FieldAccessNode>(node->target)) {
+        if (auto varTarget = std::dynamic_pointer_cast<VarAccessNode>(fieldTarget->target)) {
+            emit(OpCode::LDA, 0, symbolTable->tab[varTarget->tabIndex].adr);
+            int fieldOffset = symbolTable->tab[fieldTarget->tabIndex].adr;
+            emitLiteral(0, fieldOffset);
+            emit(OpCode::OPR, 0, 2);
+            if (node->value) node->value->accept(this);
+            emit(OpCode::STI, 0, 0);
         }
     }
 }

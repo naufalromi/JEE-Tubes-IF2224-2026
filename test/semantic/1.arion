@@ -1,112 +1,163 @@
-program GameOfLife;
+program StressArion;
 
 const
-    ROWS == 16;
-    COLS == 32;
+  SIZE == 4;
+  LIMIT == 7;
+  TITLE == '=== ARION STRESS TEST ===';
 
-type 
-    { membuat element matrix }
-    arrmatrix == array [0..COLS] of Integer;
+type
+  Row == array [0..SIZE] of Integer;
+  Matrix == array [0..SIZE] of Row;
 
-type 
-    { membuat matrix}
-    Tmatrix == array [0..ROWS] of arrmatrix;
+var
+  grid, copy: Matrix;
+  i, j, diagonal, border, checksum, countdown: Integer;
 
-var 
-    front: Tmatrix;
-    back: Tmatrix;
-    i, j: Integer;
+function modn(a, b: Integer): Integer;
+begin
+  modn := (a mod b + b) mod b;
+end;
 
-procedure display(var matrix : Tmatrix);
-    var 
-        y, x : Integer;
+function square(x: Integer): Integer;
+begin
+  square := x * x;
+end;
 
+function weighted(a, b, c: Integer): Integer;
+var
+  temp: Integer;
+begin
+  temp := square(a) + b * 3 - c;
+  if temp < 0 then
+    weighted := 0
+  else
+    weighted := temp;
+end;
+
+procedure fill(var m: Matrix);
+var
+  y, x, value: Integer;
+begin
+  for y := 0 to SIZE do
+  begin
+    for x := 0 to SIZE do
     begin
-        for y := 0 to ROWS do
-            begin   
-            write(y);
-                for x := 0 to COLS do
-                begin
-                    if (matrix[y][x] == 1) then
-                        write('#')
-                    else 
-                        write('.');
-                end;
-                writeln('');
-            end;
+      value := weighted(y, x, modn(y - x, 3));
+      if (x == y) then
+        m[y][x] := value + 100
+      else
+        m[y][x] := value;
     end;
+  end;
+end;
 
-
-
-function modn(a,b : Integer) : Integer;
+procedure copyAndMutate(var dst, src: Matrix);
+var
+  y, x, n: Integer;
+begin
+  for y := 0 to SIZE do
+  begin
+    for x := 0 to SIZE do
     begin
-        modn := (a MOD b + b) MOD b;
+      n := src[y][x];
+      if (y == 0) or (x == 0) or (y == SIZE) or (x == SIZE) then
+        dst[y][x] := n + 1
+      else
+        dst[y][x] := n - 1;
     end;
+  end;
+end;
 
-function countnbor(cx, cy : Integer; var matrix : Tmatrix) : Integer;
-    var 
-        nbors,dx,dy,x,y : Integer;
-    begin
-        nbors := 0;
-        for dx := -1 to 1 do
-            begin
-                for dy := -1 to 1 do
-                begin
-                    if (NOT((dx == 0 ) and (dy == 0))) then
-                        x := modn(cx + dx, COLS + 1);
-                        y := modn(cy + dy, ROWS + 1);
-                        if (matrix[y][x] == 1) then
-                            nbors := nbors + 1;
-                end;
-            end;
-        countnbor := nbors;
-    end;
-        
-procedure next(var back,front : Tmatrix);
-    var 
-        nbors : Integer;
-        y,x : Integer;
-    
-    begin
-        for y := 0 to ROWS do
-            begin
-                for x := 0 to COLS do
-                begin
-                    nbors := countnbor( x, y, front); 
-                    if (front[y][x] == 1) then
-                        if ((nbors == 2) OR (nbors == 3) ) then
-                            back[y][x] :=  1
-                        else 
-                            back[y][x] := 0
-                    else
-                        if (nbors == 3) then
-                            back[y][x] := 1
-                        else 
-                             back[y][x] := 0
-                end;
-            end;
-    end;
+function sumDiagonal(var m: Matrix): Integer;
+var
+  k, total: Integer;
+begin
+  total := 0;
+  for k := 0 to SIZE do
+  begin
+    total := total + m[k][k];
+  end;
+  sumDiagonal := total;
+end;
 
+function sumBorder(var m: Matrix): Integer;
+var
+  y, x, total: Integer;
+begin
+  total := 0;
+  for y := 0 to SIZE do
+  begin
+    for x := 0 to SIZE do
+    begin
+      if (y == 0) or (x == 0) or (y == SIZE) or (x == SIZE) then
+        total := total + m[y][x];
+    end;
+  end;
+  sumBorder := total;
+end;
+
+procedure printMatrix(var m: Matrix);
+var
+  y, x: Integer;
+begin
+  for y := 0 to SIZE do
+  begin
+    write(y);
+    write(':');
+    for x := 0 to SIZE do
+    begin
+      write(' ');
+      write(m[y][x]);
+    end;
+    writeln('');
+  end;
+end;
 
 begin
+  writeln(TITLE);
 
-    {   012 }
-    { 0 .*. }
-    { 1 ..* }
-    { 2 *** }
+  fill(grid);
+  writeln('Original matrix');
+  printMatrix(grid);
 
-    front[0][1] := 1;
-    front[1][2] := 1;
-    front[2][0] := 1;
-    front[2][1] := 1;
-    front[2][2] := 1;
-    
-    writeln('--- Generasi Awal ---');
-    display(front);
-    
-    next(back, front);
-    
-    writeln('--- Generasi Berikutnya ---');
-    display(back);
+  copyAndMutate(copy, grid);
+  writeln('Mutated copy');
+  printMatrix(copy);
 
+  diagonal := sumDiagonal(copy);
+  border := sumBorder(copy);
+  checksum := diagonal + border;
+
+  writeln('Diagonal');
+  writeln(diagonal);
+  writeln('Border');
+  writeln(border);
+  writeln('Checksum');
+  writeln(checksum);
+
+  case modn(checksum, 4) of
+    0: writeln('Case zero');
+    1: writeln('Case one');
+    2: writeln('Case two');
+    3: writeln('Case three')
+  end;
+
+  countdown := 3;
+  repeat
+    write('repeat ');
+    writeln(countdown);
+    countdown := countdown - 1;
+  until countdown == 0;
+
+  while countdown < 3 do
+  begin
+    write('while ');
+    writeln(countdown);
+    countdown := countdown + 1;
+  end;
+
+  if (checksum > 0) and (diagonal > 0) then
+    writeln('PASS')
+  else
+    writeln('FAIL');
 end.

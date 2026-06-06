@@ -1,0 +1,189 @@
+@startuml
+enum "NodeType" as C_0003648870377152845823
+enum C_0003648870377152845823 {
+Program
+ProgramHeader
+DeclarationPart
+ConstDeclaration
+Constant
+TypeDeclaration
+VarDeclaration
+IdentifierList
+Type
+ArrayType
+Range
+Enumerated
+RecordType
+FieldList
+FieldPart
+SubprogramDeclaration
+ProcedureDeclaration
+FunctionDeclaration
+Block
+FormalParameterList
+ParameterGroup
+CompoundStatement
+StatementList
+Statement
+AssignmentStatement
+IfStatement
+CaseStatement
+CaseBlock
+WhileStatement
+RepeatStatement
+ForStatement
+ProcedureCall
+ParameterList
+Expression
+SimpleExpression
+Term
+Factor
+RelationalOperator
+AdditiveOperator
+MultiplicativeOperator
+Variable
+ComponentVariable
+IndexList
+Error
+Ident
+ConstSy
+IntCon
+RealCon
+CharCon
+String
+ProgramSy
+Semicolon
+VarSy
+Comma
+Colon
+ArraySy
+LBrack
+RBrack
+OfSy
+RecordSy
+EndSy
+ProcedureSy
+FunctionSy
+LParent
+RParent
+BeginSy
+Becomes
+Plus
+Minus
+Times
+RDiv
+IDiv
+IMod
+AndSy
+OrSy
+NotSy
+IfSy
+ThenSy
+ElseSy
+CaseSy
+OfSy2
+WhileSy
+DoSy
+RepeatSy
+UntilSy
+ForSy
+ToSy
+DownToSy
+Period
+Eql
+Neq
+Gtr
+Geq
+Lss
+Leq
+TypeSy
+Unknown
+Literal
+BinaryOperation
+}
+class "TreeNode" as C_0006305358405894505070
+class C_0006305358405894505070 {
++TreeNode(NodeType, const std::string &  = "", bool  = false) : void
+..
++addChild(const std::shared_ptr<TreeNode> & child) : void
++typeString() const : std::string
+__
++children : std::vector<std::shared_ptr<TreeNode>>
++column : int
++isError : bool
++line : int
++type : NodeType
++value : std::string
+}
+class "Parser" as C_0009526667081451300772
+class C_0009526667081451300772 {
++Parser(const std::vector<Token> & tokens) : void
+..
++advance() : const Token &
++expect(TokenType tokenType, NodeType nodeType, std::string expectedStr) : std::shared_ptr<TreeNode>
++fail(size_t saved) : std::shared_ptr<TreeNode>
++match(TokenType type) const : bool
++need(const std::shared_ptr<TreeNode> & parent, const std::shared_ptr<TreeNode> & child) : bool
++parseAdditiveOperator() : std::shared_ptr<TreeNode>
++parseArrayType() : std::shared_ptr<TreeNode>
++parseAssignmentStatement() : std::shared_ptr<TreeNode>
++parseBlock() : std::shared_ptr<TreeNode>
++parseCaseBlock() : std::shared_ptr<TreeNode>
++parseCaseStatement() : std::shared_ptr<TreeNode>
++parseComponentVariable() : std::shared_ptr<TreeNode>
++parseCompoundStatement() : std::shared_ptr<TreeNode>
++parseConstDeclaration() : std::shared_ptr<TreeNode>
++parseConstant() : std::shared_ptr<TreeNode>
++parseDeclarationPart() : std::shared_ptr<TreeNode>
++parseEnumerated() : std::shared_ptr<TreeNode>
++parseExpression() : std::shared_ptr<TreeNode>
++parseFactor() : std::shared_ptr<TreeNode>
++parseFieldList() : std::shared_ptr<TreeNode>
++parseFieldPart() : std::shared_ptr<TreeNode>
++parseForStatement() : std::shared_ptr<TreeNode>
++parseFormalParameterList() : std::shared_ptr<TreeNode>
++parseFunctionDeclaration() : std::shared_ptr<TreeNode>
++parseIdentifierList() : std::shared_ptr<TreeNode>
++parseIfStatement() : std::shared_ptr<TreeNode>
++parseIndexList() : std::shared_ptr<TreeNode>
++parseMultiplicativeOperator() : std::shared_ptr<TreeNode>
++parseParameterGroup() : std::shared_ptr<TreeNode>
++parseParameterList() : std::shared_ptr<TreeNode>
++parseProcedureCall() : std::shared_ptr<TreeNode>
++parseProcedureDeclaration() : std::shared_ptr<TreeNode>
++parseProgram() : std::shared_ptr<TreeNode>
++parseProgramHeader() : std::shared_ptr<TreeNode>
++parseRange() : std::shared_ptr<TreeNode>
++parseRecordType() : std::shared_ptr<TreeNode>
++parseRelationalOperator() : std::shared_ptr<TreeNode>
++parseRepeatStatement() : std::shared_ptr<TreeNode>
++parseSimpleExpression() : std::shared_ptr<TreeNode>
++parseStatement() : std::shared_ptr<TreeNode>
++parseStatementList() : std::shared_ptr<TreeNode>
++parseSubprogramDeclaration() : std::shared_ptr<TreeNode>
++parseTerm() : std::shared_ptr<TreeNode>
++parseType() : std::shared_ptr<TreeNode>
++parseTypeDeclaration() : std::shared_ptr<TreeNode>
++parseVarDeclaration() : std::shared_ptr<TreeNode>
++parseVariable() : std::shared_ptr<TreeNode>
++parseWhileStatement() : std::shared_ptr<TreeNode>
++peek(int offset = 0) const : const Token &
+{static} +printNode(const std::shared_ptr<TreeNode> & node) : std::string
+{static} +printParseTree(const std::shared_ptr<TreeNode> & node, const std::string & prefix, bool last, bool root) : void
++restore(size_t saved) : void
++save() const : size_t
++synchronize() : void
++terminal(TokenType tokenType, NodeType nodeType) : std::shared_ptr<TreeNode>
+__
++pos : size_t
++syntaxErrors : std::vector<std::string>
++tokens : const std::vector<Token> &
+}
+C_0006305358405894505070 o-- C_0003648870377152845823 : +type
+C_0006305358405894505070 o-- C_0006305358405894505070 : +children
+C_0009526667081451300772 ..> C_0006305358405894505070
+C_0009526667081451300772 ..> C_0003648870377152845823
+
+'Generated with clang-uml, version 0.6.2
+'LLVM version Ubuntu clang version 18.1.3 (1ubuntu1)
+@enduml

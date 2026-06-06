@@ -1,0 +1,72 @@
+compilation_database_dir: .
+output_directory: doc/diagrams
+
+diagrams:
+  lexer_class:
+    type: class
+    include:
+      paths:
+        - src/lexer
+        - src/common/Token.hpp
+    exclude:
+      namespaces:
+        - std
+
+  parser_class:
+    type: class
+    include:
+      paths:
+        - src/syntax
+        - src/common/Tree.hpp
+        - src/common/NodeType.hpp
+    exclude:
+      namespaces:
+        - std
+
+  semantic_class:
+    type: class
+    include:
+      paths:
+        - src/semantic/SemanticAnalyzer.hpp
+        - src/semantic/SemanticVisitor.hpp
+        - src/semantic/ASTVisitor.hpp
+        - src/semantic/ASTBuilder.hpp
+        - src/semantic/SymbolTable.hpp
+        - src/common/DataType.hpp
+        - src/common/ObjectType.hpp
+        - src/semantic/ASTNode.hpp
+    exclude:
+      namespaces:
+        - std
+      subclasses:
+        - ASTNode
+      elements:
+        - ASTNodeType
+
+  ast_node_class:
+    type: class
+    include:
+      paths:
+        - src/semantic/ASTNode.hpp
+    exclude:
+      namespaces:
+        - std
+      elements:
+        - ASTNodeType
+    plantuml:
+      before:
+        - "left to right direction"
+        - "hide methods"
+        - "hide attributes"
+
+  codegen_interpreter_class:
+    type: class
+    include:
+      paths:
+        - src/codegen
+        - src/interpreter
+        - src/common/Instruction.hpp
+        - src/common/RuntimeValue.hpp
+    exclude:
+      namespaces:
+        - std
