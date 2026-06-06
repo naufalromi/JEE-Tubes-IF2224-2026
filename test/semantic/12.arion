@@ -46,16 +46,18 @@ function countnbor(cx, cy : Integer; var matrix : Tmatrix) : Integer;
     begin
         nbors := 0;
         for dx := -1 to 1 do
+        begin
+            for dy := -1 to 1 do
             begin
-                for dy := -1 to 1 do
+                if ((dx <> 0) OR (dy <> 0)) then
                 begin
-                    if (NOT((dx == 0 ) and (dy == 0))) then
-                        x := modn(cx + dx, COLS);
-                        y := modn(cy + dy, ROWS);
-                        if (matrix[y][x] == 1) then
-                            nbors := nbors + 1;
+                    x := modn(cx + dx, COLS);
+                    y := modn(cy + dy, ROWS);
+                    if (matrix[y][x] == 1) then
+                        nbors := nbors + 1;
                 end;
             end;
+        end;
         countnbor := nbors;
     end;
         
@@ -71,15 +73,19 @@ procedure next(var front,back : Tmatrix);
                 begin
                     nbors := countnbor(x, y, front); 
                     if (front[y][x] == 1) then
+                    begin
                         if ((nbors == 2) OR (nbors == 3) ) then
                             back[y][x] :=  1
                         else 
-                            back[y][x] := 0
+                            back[y][x] := 0;
+                    end
                     else
+                    begin
                         if (nbors == 3) then
                             back[y][x] := 1
                         else 
-                             back[y][x] := 0
+                             back[y][x] := 0;
+                    end;
                 end;
             end;
     end;
@@ -126,7 +132,7 @@ begin
         next(front,back);
         copyMatrix(front, back) ;
 
-        for k := 0 to 10000 do
+        for k := 0 to 6767 do
             begin
             end;
         writeln('');
