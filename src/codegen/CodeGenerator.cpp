@@ -239,6 +239,9 @@ void CodeGenerator::visit(AssignmentStatementNode *node)
     if (auto arrTarget = std::dynamic_pointer_cast<ArrayAccessNode>(node->target)) {
         arrTarget->accept(this); // Evaluasi alamat target
         if (node->value) node->value->accept(this); // Push nilai
+        if (std::dynamic_pointer_cast<ArrayAccessNode>(node->value)) {
+            emit(OpCode::LDI, 0, 0);
+        }
         emit(OpCode::STA, 0, 0);
     }
     // Kasus target adalah Record Field
@@ -320,6 +323,10 @@ void CodeGenerator::visit(UnaryOpNode *node)
     std::transform(op.begin(), op.end(), op.begin(), ::tolower);
 
     if (op == "-") emit(OpCode::OPR, 0, 1);
+    else if (op == "not") {
+        emitLiteral(0, 0);
+        emit(OpCode::OPR, 0, 7); // value == 0
+    }
 }
 
 void CodeGenerator::visit(IfStatementNode *node)

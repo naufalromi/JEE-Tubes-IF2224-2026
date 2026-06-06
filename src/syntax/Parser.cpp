@@ -801,6 +801,7 @@ std::shared_ptr<TreeNode> Parser::parseStatement()
     else if (type == TokenType::WHILESY)  child = parseWhileStatement();
     else if (type == TokenType::REPEATSY) child = parseRepeatStatement();
     else if (type == TokenType::FORSY)    child = parseForStatement();
+    else if (type == TokenType::BEGINSY)  child = parseCompoundStatement();
     else if (type == TokenType::IDENT) {
         size_t saved = save();
         auto varNode = parseVariable(); 
