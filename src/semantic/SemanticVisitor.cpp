@@ -132,6 +132,12 @@ void SemanticVisitor::visit(ConstDeclarationNode *node)
         if (auto intLit = std::dynamic_pointer_cast<IntegerLiteralNode>(node->value)) {
             symbolTable.tab[index].adr = intLit->value;
         }
+        else if (auto realLit = std::dynamic_pointer_cast<RealLiteralNode>(node->value)) {
+            symbolTable.tab[index].adr = realLit->value; 
+        }
+        else if (auto boolLit = std::dynamic_pointer_cast<BooleanLiteralNode>(node->value)) {
+            symbolTable.tab[index].adr = boolLit->value; 
+        }
         node->tabIndex = index;
     }
 }
